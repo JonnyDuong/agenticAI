@@ -1,0 +1,36 @@
+7.4.2
+Entropy targeting
+
+Figure 12:
+Impact of εhigh on the entropy distribution throughout training. (a) Entropy evolution
+throughout training of a 3B model on a math only dataset. Entropy drops with entropy bonus, while higher
+εhigh maintains entropy, allowing for better exploration. (b) Entropy evolution throughout training of a 3B model
+on a math and code dataset. Entropy explodes with entropy bonus, even though the coefficient is the same
+as the math only version. Higher εhigh behaves better, allowing entropy to decrease.
+
+To encourage exploration and prevent entropy collapse during RL training, a common strategy in
+the literature [Schulman et al., 2017] is to add an entropy bonus loss term. However, we found this
+strategy to be unstable as the effect of the entropy bonus varies significantly depending on the dataset.
+For a math-only dataset, entropy drops with the entropy bonus, while a higher εhigh maintains entropy,
+enhancing exploration (Figure 12a). On a math and code dataset, entropy increases excessively with
+the entropy bonus (even with the same coefficient as in the math-only run), while a higher εhigh allows
+entropy to decrease, improving exploitation (Figure 12b).
+
+15
+
+
+--- Page 16 ---
+Instead, we found it more effective to depend on εhigh, as also noted in literature [Yu et al., 2025,
+Wang et al., 2025]. This method avoids the instability issues associated with entropy bonuses.
+
+Another approach for controlling entropy is adding a KL term to the PPO loss. However, as the
+generation distribution is expected to deviate significantly from the original model, we found that
+using a KL penalty primarily hinders training, consistent with previous findings [Yu et al., 2025]. We
+attempted using an exponential moving average of the weights during training as a reference for KL,
+but found it simpler to manually adjust εhigh.
+
+Figure 13: Benchmark performance of Magistral Medium fine-tuned on open-source traces. All results are
+reported using pass@1. The shaded region highlights the additional improvement achieved through RL on top of
+supervised fine-tuning. We find that while fine-tuning on open-source traces yields strong results, applying RL
+further enhances performance significantly. In particular, the accuracy on AIME’25 increases by more than 12%.
+Please note that the performance on GPQA Diamond drops after RL from 72.9% to 71.0%.

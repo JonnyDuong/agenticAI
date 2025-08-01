@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG LLM Chat Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .chat-container {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+            height: 400px;
+            overflow-y: auto;
+        }
+        
+        .query-container {
+            display: flex;
+            margin-top: 20px;
+        }
+        
+        #queryInput {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        
+        button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #3367d6;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .user-message {
+            background-color: #e3f2fd;
+            text-align: right;
+        }
+        
+        .assistant-message {
+            background-color: #f5f5f5;
+        }
+        
+        .loading {
+            margin: 20px 0;
+            text-align: center;
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>RAG LLM Chat Interface</h1>
+    <p>Ask questions about Magistral and reinforcement learning</p>
+    
+    <div class="chat-container" id="chatContainer"></div>
+    
+    <div class="query-container">
+        <input type="text" id="queryInput" placeholder="Type your question here...">
+        <button onclick="sendQuery()">Ask</button>
+    </div>
+    
+    <script>
+        // API endpoint
+        const API_ENDPOINT = 'http://localhost:5000/api/query';
+        
+        // Function to send query to the API
+        async function sendQuery() {
+            const queryInput = document.getElementById('queryInput');
+            const query = queryInput.value.trim();
+            
+            if (!query) {
+                alert('Please enter a question');
+                return;
+            }
+            
+            // Add user message to chat
+            addMessage('user', query);
+            
+            // Clear input field
+            queryInput.value = '';
+            
+            // Add loading indicator
+            const loadingId = addLoading();
+            
+            try {
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query })
+                });
+                
+                // Remove loading indicator
+                removeLoading(loadingId);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        addMessage('assistant', data.response);
+                    } else {
+                        addMessage('assistant', `Error: ${data.message}`);
+                    }
+                } else {
+                    addMessage('assistant', `Error: Server responded with status ${response.status}`);
+                }
+            } catch (error) {
+                // Remove loading indicator
+                removeLoading(loadingId);
+                addMessage('assistant', `Error: ${error.message}`);
+            }
+        }
+        
+        // Function to add a message to the chat
+        function addMessage(sender, message) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.classList.add(sender === 'user' ? 'user-message' : 'assistant-message');
+            
+            // Format message with line breaks
+            const formattedMessage = message.replace(/\n/g, '<br>');
+            messageElement.innerHTML = formattedMessage;
+            
+            chatContainer.appendChild(messageElement);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // Function to add loading indicator
+        function addLoading() {
+            const chatContainer = document.getElementById('chatContainer');
+            const loadingElement = document.createElement('div');
+            loadingElement.classList.add('loading');
+            loadingElement.textContent = 'Assistant is thinking...';
+            
+            chatContainer.appendChild(loadingElement);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            return Date.now(); // Using timestamp as an ID
+        }
+        
+        // Function to remove loading indicator
+        function removeLoading(id) {
+            const chatContainer = document.getElementById('chatContainer');
+            const loadingElements = document.getElementsByClassName('loading');
+            
+            if (loadingElements.length > 0) {
+                chatContainer.removeChild(loadingElements[0]);
+            }
+        }
+        
+        // Event listener for Enter key
+        document.getElementById('queryInput').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                sendQuery();
+            }
+        });
+    </script>
+</body>
+</html>

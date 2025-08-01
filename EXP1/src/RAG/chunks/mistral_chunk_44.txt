@@ -1,0 +1,42 @@
+7.1
+Reinforcement learning moves weights in low-dimensional space
+
+To better understand the dynamics of Magistral during RL training, we follow the method of [Li
+et al., 2018] to analyze the Magistral Small RL-only run and visualize the loss landscape around the
+final checkpoint.
+
+First, we stack the weights of all intermediate checkpoints in a matrix X ∈RT ×W , where T is
+the number of checkpoints and W is the number of weights. Then, we subtract the mean weights
+
+12
+
+
+--- Page 13 ---
+across the T checkpoints and perform a PCA analysis to find two principal components of the
+matrix X in the weight space. Since the weight space is very high-dimensional, we use the iterative
+Lanczos-Arnoldi algorithm [Saad, 2003] to find the top-2 eigenvectors of XT X. As a result, we
+obtain two components c1 and c2 that we L2-normalize to have a unit norm.
+
+Second, we perturb the final checkpoint weights w∗∈RW by adding two components as
+
+w(α1, α2) = w∗+ α1c1 + α2c2
+(2)
+
+We evaluate each perturbed checkpoint on a fixed batch of 512 prompts, generating 16 completions
+per prompt, and using the same reward setting as in Magistral Small RL-only run. Finally, we
+compute mean reward and mean output length for each checkpoint and plot it in (α1, α2) coordinates.
+
+Figure 8: Reward and length evolution in w(α1, α2) hyperplane. Black arrow trajectory is a projection
+of intermediate checkpoints of Magistral Small RL-only run on the hyperplane. Black points are perturbed
+checkpoints computed using Equation 2. Intermediate values are computed with linear interpolation on the
+triangular grid.
+
+We clearly observe that there is a “length” direction - as model goes from right to left in Figure 8,
+mean reward and output length grow up until the point where length starts to hit length penalty and
+maximally allowed completion length. We additionally plot dependence of raw reward without length
+penalty on output length, observing a ubiquitous log scaling in Figure 9.
+
+Figure 9: Reward scaling with output length. Each point corresponds to a perturbed checkpoint computed
+with Equation 2. We generate 8192 completions with the checkpoint and evaluate mean output length and raw
+reward (reward without length penalty). We perform linear regression on checkpoints with mean output length
+between 1500 and 8000 and observe that reward scales logarithmically with the output length.

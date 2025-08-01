@@ -1,0 +1,7 @@
+2
+Methodology
+
+In this section, we outline the training methodology used to develop the Magistral models. This
+includes our optimizations of the GRPO algorithm for training stability (Section 2.1) and our training
+reward to improve both mathematical and coding capabilities, while ensuring the model adheres to
+proper format, length, and language usage (Section 2.2).

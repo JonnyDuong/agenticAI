@@ -1,0 +1,26 @@
+7.4.1
+Partial reward for code data
+
+The strict requirements of competitive programming, in terms of correctness and adherence to
+complexity constraints, result in sparse rewards, often causing many code generations to be discarded
+due to limited reward diversity.
+
+To address this, we experimented with a proportional reward: based on the fraction of tests passed, as
+opposed to the binary reward discussed in Section 2.2.2. In an ablation with a 24B model over 250
+
+14
+
+
+--- Page 15 ---
+steps, we found that training with proportional rewards was faster, discarding three times less data.
+However, this approach led to slightly lower final performance on benchmarks, with a 2% decrease
+on LiveCodeBench (Figure 11a), and slower growth in generation length (Figure 11b).
+
+The hope was that a reward based on the fraction of tests passed should provide a richer signal than
+a simple pass/fail for RL training. However, the potential issue is that partial rewards could also
+provide false signal to incorrect solutions and be more sensitive to minor inconsistencies between
+implementations, potentially leading to less meaningful training batches.
+
+Figure 11: Binary vs proportional reward for code problems. (a) Accuracy on AIME and LiveCodeBench af-
+ter 250 steps of training with binary reward and proportional reward. Performance on LiveCodeBench is 2% lower
+with proportional rewards. (b) Length evolution throughout training. Length increases more with binary rewards.

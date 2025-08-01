@@ -1,0 +1,16 @@
+5.1
+Evaluation benchmarks and baselines
+
+We report results on benchmarks that assess capabilities in the fields of mathematics, coding,
+and STEM. For math, we provide results on the American Invitational Mathematics Examination
+benchmarks (AIME’24, AIME’25), and on the MATH dataset [Hendrycks et al., 2021]. In coding, we
+include LiveCodeBench (both v5 and v6 versions) [Jain et al., 2024], and Aider Polyglot [Gauthier,
+2024]. For STEM, we report results based on the GPQA dataset [Rein et al., 2024]. Additionally,
+we also report our results on the text-only questions from Humanity’s Last Exam [Phan et al., 2025]
+which comprises of 2,500 questions across dozens of subjects, including mathematics, humanities,
+and natural sciences. For all evaluation tasks, we set the temperature to 0.7 and use a top-p of 1.0
+for Math evals and GPQA, and 0.95 for coding tasks. The maximum token length is set to 40k for
+AIME and LiveCodeBench, and 32k for all other evaluations.
+
+For baselines we include results from [DeepSeek-AI et al., 2025], which reports comparable datapoints
+for training with RL at scale, both with and without SFT on traces from a reasoning model.

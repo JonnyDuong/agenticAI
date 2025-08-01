@@ -1,0 +1,19 @@
+7.3
+Impact of RL on other capabilities
+
+Similar to the multimodal capabilities mentioned in Section 7.2, our RL checkpoint maintains and
+even improves its tool calling and instruction following capabilities [Zhou et al., 2023] (Table 6).
+This allows us to integrate the model out-of-the-box with existing tools as shown.
+
+Table 6: Benchmarks before and after reinforcement learning. Internal bench is Mistral’s internal function
+calling benchmark. We use an internal version of IFEval that fixes some issues with the public version. The
+scores are not comparable with other publicly shared scores.
+
+Category
+Benchmark
+Mistral Medium 3
+Magistral Medium
+
+Function calling
+Internal bench
+87.2

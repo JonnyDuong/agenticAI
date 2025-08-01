@@ -1,0 +1,1807 @@
+--- Chunk 0 ---
+arXiv:2506.10910v1  [cs.CL]  12 Jun 2025
+Magistral
+Abstract
+We introduce Magistral, Mistral’s first reasoning model and our own scalable rein-
+forcement learning (RL) pipeline.
+--- Chunk 1 ---
+Instead of relying on existing implementations
+and RL traces distilled from prior models, we follow a ground up approach, relying
+solely on our own models and infrastructure.
+--- Chunk 2 ---
+Notably, we demonstrate a stack that
+enabled us to explore the limits of pure RL training of LLMs, present a simple
+method to force the reasoning language of the model, and show that RL on text
+data alone maintains most of the initial checkpoint’s capabilities.
+--- Chunk 3 ---
+We find that RL
+on text maintains or improves multimodal understanding, instruction following and
+function calling.
+--- Chunk 4 ---
+We present Magistral Medium, trained for reasoning on top of
+Mistral Medium 3 with RL alone, and we open-source Magistral Small (Apache
+2.0) which further includes cold-start data from Magistral Medium.
+1
+Introduction
+Enhancing the reasoning abilities of large language models (LLMs) has emerged as a key frontier in
+modern AI research.
+--- Chunk 5 ---
+Reasoning models such as o1 [Jaech et al., 2024] differ widely from classic
+chatbots, leveraging longer chains-of-thought to improve performance on complex tasks.
+--- Chunk 6 ---
+The seminal
+work by DeepSeek-AI et al. [2025] gave the community crucial insights on the Reinforcement
+Learning from Verifiable Rewards (RLVR) recipe, for creating reasoning models at scale.
+--- Chunk 7 ---
+In this paper, we introduce Mistral’s first reasoning models: Magistral Small and Magistral Medium,
+based on the Mistral Small 3 and Mistral Medium 3 models respectively, and outline our proposed
+RLVR framework in detail.
+--- Chunk 8 ---
+The key contributions of our paper are the following:
+• We present in detail how we trained Magistral Medium with RL alone, with no distillation
+from pre-existing reasoning models, yielding a nearly 50% boost in AIME-24 (pass@1).
+• We discuss in depth the infrastructure and design choices that enable large-scale online
+RL.
+--- Chunk 9 ---
+Our asynchronous system enables fast, continuous RL training by updating generators
+frequently without interrupting them, balancing efficiency with on-policyness.
+• We present a simple yet effective strategy to make the model multilingual, where both the
+chain-of-thought and the final response are written in the user’s language.
+• We contribute insights that add to, or contradict, existing RLVR literature, for example on
+whether RL can improve upon the distillation SFT baseline for small models.
+--- Chunk 10 ---
+We also show
+that multimodal reasoning capabilities emerge with online RL with textual data on top of
+a multimodal model.
+--- Chunk 11 ---
+We share the results of our unsuccessful experiments.
+• We release the weights of Magistral Small (24B) under the Apache 2 license1.
+1https://huggingface.co/mistralai/Magistral-Small-2506
+--- Chunk 12 ---
+Figure 1: Performance of Magistral Medium on common reasoning benchmarks.
+--- Chunk 13 ---
+We highlight the
+strength of our proposed RLVR framework, which yields a 50% increase in AIME-24 (pass@1) over the initial
+Mistral Medium 3 checkpoint, without any cold-start reasoning traces.
+--- Chunk 14 ---
+We compare against analogous results
+from [DeepSeek-AI et al., 2025], which show RL improvements from DeepSeek-v3 to DeepSeek-R1 (January
+25).
+--- Chunk 15 ---
+Magistral Medium reaches 90% accuracy on AIME-24 with majority voting.
+--- Chunk 16 ---
+The paper is organized as follows: Section 2 details the RL algorithm we used, along with the design
+choices implemented to guide the reasoning models in terms of language and format; Section 3
+presents our scalable infrastructure that supports efficient training on a large cluster of GPUs;
+Section 4 discusses the data selection process we employed for efficient and effective training;
+Section 5 presents the performance of Magistral on reasoning and multilingual benchmarks; Section 6
+shows the ablations done to motivate the training choices; Section 7 presents a PCA-based study
+of the model weights’ trajectory during RL, demonstrates that RL on text data preserves or even
+improves multimodal capabilities, and includes methods that worked poorly for Magistral; Section 8
+shows that one can train a model to perform on par with R1 with distillation followed by RL, which
+we did not use for Magistral Medium; Finally, we conclude with some future directions in Section 9.
+2
+Methodology
+In this section, we outline the training methodology used to develop the Magistral models.
+--- Chunk 17 ---
+This
+includes our optimizations of the GRPO algorithm for training stability (Section 2.1) and our training
+reward to improve both mathematical and coding capabilities, while ensuring the model adheres to
+proper format, length, and language usage (Section 2.2).
+2.1
+Reinforcement learning algorithm
+We use Group Relative Policy Optimization (GRPO) [Shao et al., 2024] as our RL algorithm.
+--- Chunk 18 ---
+Unlike
+PPO [Schulman et al., 2017], GRPO eliminates the need for a ‘critic model’, and instead uses the aver-
+age reward from multiple generations per prompt from the policy to compute a baseline for advantage
+calculation.
+--- Chunk 19 ---
+Specifically, GRPO optimizes the policy πθ to maximize the following objective:
+JGRPO(θ) = Eq∼P (Q),{oi}G
+i=1∼πθold(·|q)
+"
+G
+X
+i=1
+|oi|
+X
+t=1
+1
+|oi|
+
+min
+ πθ(oi,t|q, oi,<t)
+πθold(oi,t|q, oi,<t)
+ˆAi,t, clip( πθ(oi,t|q, oi,<t)
+πθold(oi,t|q, oi,<t), 1 −ε, 1 + ε) ˆAi,t
+
+−βDKL[πθ(·|q)∥πref(·|q)]
+#
+,
+where q represents queries drawn from the input dataset, o represents the generation of the model, ε
+is the PPO clipping threshold, β is the KL penalty coefficient, and DKL denotes the Kullback–Leibler
+divergence between the current policy πθ and the reference policy πref.
+--- Chunk 20 ---
+The relative advantage, or
+the group normalized advantage, is given by ˆAi,t = ri−µ
+σ
+where µ and σ are the mean and standard
+2
+--- Chunk 21 ---
+deviation of rewards computed within a single group.
+--- Chunk 22 ---
+Building on prior work adapting GRPO for
+reasoning tasks [Yu et al., 2025, Liu et al., 2025, Hu et al., 2025], we introduced several modifications:
+Eliminating KL divergence.
+--- Chunk 23 ---
+The KL divergence penalty constrains the online policy from deviating
+too much from a reference policy, helping to maintain alignment with the initial model.
+--- Chunk 24 ---
+However, in
+GRPO, the policy diverges substantially regardless, and maintaining a copy of the reference model
+for KL computation incurs a compute cost we find unjustified.
+--- Chunk 25 ---
+We remove the KL penalty entirely.
+--- Chunk 26 ---
+To avoid introducing length biases between generations in one group, we
+normalize the loss by first adding token-wise loss for all tokens and all generations and then dividing
+by the total length of generations in the group PG
+i=1 |oi|.
+--- Chunk 27 ---
+We estimate the advantage of each token simply as ˆAi,t = ˆAi = ri −µ,
+where µ is the mean of rewards within a group.
+--- Chunk 28 ---
+Following Andrychowicz et al. [2020], we additionally
+normalize the advantages in each minibatch as ˆAnorm
+i,t
+= ( ˆAi −ˆAmean)/ ˆAstd where ˆAmean and ˆAstd are
+the sequence-wise mean and standard deviation of the advantages ˆAi in a minibatch.
+--- Chunk 29 ---
+Relaxing the trust region’s upper bound.
+--- Chunk 30 ---
+We allow the model to explore rare but potentially
+insightful reasoning steps, preventing deterministic policies.
+--- Chunk 31 ---
+We adopt the Clip-Higher [Yu et al.,
+2025] strategy to address entropy collapse.
+--- Chunk 32 ---
+In standard GRPO, ε-clipping limits exploration by
+restricting the increase in probability of low-likelihood tokens, hindering the reinforcement of rare
+but important reasoning paths.
+--- Chunk 33 ---
+By increasing the upper clipping threshold to εhigh, low-probability
+tokens have more room to grow, enhancing entropy and diversity in outputs, and improving reasoning
+exploration.
+--- Chunk 34 ---
+We found that careful tuning of εhigh is crucial to maintaining stability in the RL run.
+--- Chunk 35 ---
+We
+adjusted it between 0.26 and 0.28 during the training to keep the group entropy stable.
+--- Chunk 36 ---
+Eliminating non-diverse groups.
+--- Chunk 37 ---
+Groups where all generations are either entirely correct or wrong
+have zero advantage and therefore contribute nothing to the batch loss.
+--- Chunk 38 ---
+This results in smaller
+gradients with increased noise sensitivity.
+--- Chunk 39 ---
+To address this, we filter out all groups with zero advantage
+when forming training batches.
+--- Chunk 40 ---
+The final GRPO loss with all modifications highlighted in red is
+JGRPO(θ) = Eq∼P (Q),{oi}G
+i=1∼πθold(·|q)
+1
+PG
+i=1 |oi|
+G
+X
+i=1
+|oi|
+X
+t=1
+min
+ πθ(oi,t|q, oi,<t)
+πθold(oi,t|q, oi,<t)
+ˆAnorm
+i,t , clip( πθ(oi,t|q, oi,<t)
+πθold(oi,t|q, oi,<t), 1 −εlow, 1 + εhigh) ˆAnorm
+i,t
+
+,
+s. t. ∃1 ≤m < n ≤G, rm ̸= rn.
+2.2
+Reward shaping
+Choosing the appropriate reward is crucial for the RL algorithm to work effectively.
+--- Chunk 41 ---
+During training,
+model generations are evaluated along four axes: formatting, correctness, length, and language
+consistency, which we describe below.
+2.2.1
+Formatting
+For both math and code problems, we instruct the model to follow a specific format, which facilitates
+the extraction of the model’s answer:
+1.
+--- Chunk 42 ---
+Tag requirements: (i) The model response must start with a <think> tag and must include
+a corresponding </think> tag. (ii) There should be exactly one set of these tags present in
+the response.
+2.
+--- Chunk 43 ---
+Mathematical responses: For mathematical outputs, the response must include the final
+answer enclosed in \boxed{} within the answer section, following the </think> tag.
+3.
+--- Chunk 44 ---
+Code responses: For code outputs, the response must include at least one markdown block,
+formatted with triple backticks followed by the programming language specification, in the
+answer section.
+3
+--- Chunk 45 ---
+Failure to meet any of these conditions results in a reward of 0, and the response will not be graded
+further.
+--- Chunk 46 ---
+Otherwise, the response gets a reward of 0.1 and proceeds to grading.
+2.2.2
+Correctness
+If the generated answer follows the required formatting, we extract the model solution and use a
+verifier to assess its correctness.
+--- Chunk 47 ---
+The final answer is extracted from inside the last \boxed{} in the solution and
+compared against the reference answer using a rule-based verifier.
+--- Chunk 48 ---
+It normalizes both the ground-truth
+and the generated answer to correctly reward semantically identical responses with different syntaxes.
+--- Chunk 49 ---
+We leverage a combination of different parsers and SymPy2 to evaluate outputs and compare them
+to the original ground truth.
+--- Chunk 50 ---
+An additional reward of 0.9 is given if the answer is correct, making
+the total reward 1.0.
+--- Chunk 51 ---
+Code is extracted from the first markdown code block in the answer section.
+--- Chunk 52 ---
+If the
+code is written in C++, it is compiled with a timeout of 10 seconds, using the C++20 standard.
+--- Chunk 53 ---
+We
+pre-compile the bits/stdc++.h standard library header, which is commonly used in competitive
+programming, to speed up the compilation process.
+--- Chunk 54 ---
+We randomly select 20 tests from the available
+test cases, ensuring that the same tests are used within a given response group.
+--- Chunk 55 ---
+The code is then
+executed against these tests, with each test having a timeout of 4 seconds and a memory limit of 300
+MB.
+--- Chunk 56 ---
+An additional reward of 0.9 is given if the code successfully passes all the tests.
+2.2.3
+Length penalty
+Following [Yu et al., 2025], we use soft length penalty to signal the model that the hard cutoff on
+maximal completion length is near.
+--- Chunk 57 ---
+We fix two lengths lmax and lcache and compute length penalty as
+Rlength(y) =
+
+
+
+
+
+0,
+|y| ≤lmax −lcache
+−0.1 · |y|−lmax+lcache
+lcache
+,
+lmax −lcache < |y| ≤lmax,
+−0.1,
+lmax < |y|
+(1)
+2.2.4
+Language consistency reward
+A core design principle for Magistral is for it to reason in the same language as the user.
+--- Chunk 58 ---
+Reinforcement
+learning on math and coding problems without any treatment often results in mixed-language model
+responses.
+--- Chunk 59 ---
+In preliminary experiments without language constraints, we frequently observed outputs
+that mixed English, Chinese, and Russian words.
+--- Chunk 60 ---
+While these outputs were coherent, they were
+undesirable from a user perspective.
+--- Chunk 61 ---
+To prevent language switching, we translated 10% of our problems written in English to the following
+languages: French, Spanish, Italian, German, Chinese, and Russian.
+--- Chunk 62 ---
+When calculating the reward
+for a conversation—a triple of (problem, thoughts, answer)—we first normalized each of the three
+components by removing LaTeX content and code blocks, and then applied a fastText classifier [Joulin
+et al., 2016] to each.
+--- Chunk 63 ---
+If the classifier indicates that all three parts used the same language, we give an
+additional reward of 0.1.
+--- Chunk 64 ---
+These simple modifications are sufficient to enable the model to closely follow the language of the
+user, with minimal code-switching, while maintaining performance on reasoning tasks.
+--- Chunk 65 ---
+Although we
+only translated the original English problems into a few languages, we observed that the model could
+successfully generate chains of thought in arbitrary languages.
+--- Chunk 66 ---
+We specify the format and the language requirements in the system prompt, which
+can be found in Figure 2.
+--- Chunk 67 ---
+We find that RL training is quite sensitive to the system prompt we use.
+--- Chunk 68 ---
+For example, the Be as casual and as long as you want part of the system prompt increases the
+entropy of the model and therefore improves the exploration of the model.
+4
+--- Chunk 69 ---
+Magistral’s system prompt
+A user will ask you to solve a task.
+--- Chunk 70 ---
+You should first draft your thinking process (inner
+monologue) until you have derived the final answer.
+--- Chunk 71 ---
+Afterwards, write a self-contained
+summary of your thoughts (i.e. your summary should be succinct but contain all the critical
+steps you needed to reach the conclusion).
+--- Chunk 72 ---
+You should use Markdown and Latex to format
+your response.
+--- Chunk 73 ---
+Write both your thoughts and summary in the same language as the task
+posed by the user.
+--- Chunk 74 ---
+Your thinking process must follow the template below:
+<think>
+Your thoughts or/and draft, like working through an exercise on scratch paper.
+--- Chunk 75 ---
+Be as casual
+and as long as you want until you are confident to generate a correct answer.
+</think>
+Here, provide a concise summary that reflects your reasoning and presents a clear final
+answer to the user.
+--- Chunk 76 ---
+Problem:
+{problem}
+Figure 2: Magistral’s system prompt.
+--- Chunk 77 ---
+The system prompt spells out the format and language guidelines for
+the model.
+--- Chunk 78 ---
+The same system prompt is utilized for both mathematical and coding problems.
+3
+Infrastructure
+In this section, we present our infrastructure for online training.
+--- Chunk 79 ---
+We adopt a distributed RL training
+system similar to those proposed in several prior works [Espeholt et al., 2018, Hu et al., 2024,
+Noukhovitch et al., 2024, Sheng et al., 2024, Wu et al., 2025] that coordinates three kinds of workers:
+• Trainers maintain the main copy of the model weights and perform gradient updates.
+• Generators perform ‘roll-outs’, using the latest policy to return completions with log-
+probabilities from the training prompts.
+• Verifiers evaluate the completions produced by the generators and return a reward (see
+Section 2.2 for details).
+--- Chunk 80 ---
+Challenges with distributed RL.
+--- Chunk 81 ---
+Generators are a significant part of the total compute and the
+part that’s unique to online RL.
+--- Chunk 82 ---
+Their workload is highly heterogeneous and hard to predict as the
+distribution of sequence lengths is highly skewed and changes over the course of training: the longest
+completions can take up to 5 times longer than the shortest.
+--- Chunk 83 ---
+One of the main constraints of the system
+is to introduce no bias on sequence lengths: the distribution of completion lengths must be exactly
+that of the training data, even though shorter completions finish more quickly.
+--- Chunk 84 ---
+A competing goal is
+to update the generator weights as soon as possible.
+--- Chunk 85 ---
+We want the generations to be as on-policy as
+possible, but we also want the generators to operate without waiting for each other or the trainers.
+--- Chunk 86 ---
+In order to train without any approximation, we could process batches
+sequentially: start generators on a batch, wait for all sequences to complete, update the model weights
+for both trainers and generators, and repeat.
+--- Chunk 87 ---
+However, this approach leads to idle generators and
+low pipeline efficiency due to heterogeneous completion times.
+--- Chunk 88 ---
+Instead, we prioritize efficiency and
+operate the generators continuously at maximum throughput without ever waiting for the trainers.
+--- Chunk 89 ---
+We constantly gather groups from the generators, verify them, and update the trainers.
+--- Chunk 90 ---
+After these
+updates, the trainers send the new weights to the generators via NCCL, without discarding the in-flight
+sequences currently being generated.
+--- Chunk 91 ---
+Broadcasting weights from GPUs to GPUs is crucial as it
+reduces the time required for a single update to below 5 seconds, even with large models and large
+world sizes.
+--- Chunk 92 ---
+We illustrate this process in Figure 3.
+2https://www.sympy.org/en/index.html
+5
+--- Chunk 93 ---
+Inference workers
+Trainers
+πi+1
+πi
+πi-1
+πi-2
+1.
+--- Chunk 94 ---
+Scoring
+Verifiers
+πi+1 =  πi  + ∇ J
+Generators
+2
+3
+1
+4
+Reward
+End of sequence
+Beginning of sequence
+Policy change
+Step i batch
+πi
+Sequence for step i
+Sequence from previous batch
+Figure 3: Online training pipeline. 1) Generators continuously output completions to prompts from input
+data sources. 2) Whenever a completion is finished, it is sent to the appropriate verifier. 3) Each sequence is
+sent to a different data parallel group using a pre-set permutation until every data parallel group has enough
+sequences to form a batch. 4) A single gradient step is performed and the trainer and generators are updated.
+--- Chunk 95 ---
+In the generators, weights are replaced mid-generation, which means that in-flight generations continue with
+a slightly outdated key-value cache, as we do not refresh the cache.
+--- Chunk 96 ---
+Since the model resides on GPUs in both the
+trainer and the generators, the weights are transferred using NCCL for optimal performance.
+--- Chunk 97 ---
+The model weights
+are dynamically consolidated to accommodate the different sharding topologies between trainers and generators.
+--- Chunk 98 ---
+As a solution is generated for a single prompt, it may experience multiple updates to the model
+weights, reflecting the latest improvements from the trainers.
+--- Chunk 99 ---
+By the time it is fully processed and
+sent to the trainers, the model weights may have been updated several times, but the latest tokens are
+always generated on-policy.
+--- Chunk 100 ---
+When updating the model weights, the hidden states previously stored in
+the key-value cache become slightly outdated because they were computed by previous versions of the
+model.
+--- Chunk 101 ---
+For performance, we find that recomputing the key-value cache is not necessary, potentially
+due to off-policy corrections inherent to the loss function [Schulman et al., 2017].
+--- Chunk 102 ---
+We define a batch as a fixed number of generated completions, rather than a
+fixed number of tokens.
+--- Chunk 103 ---
+Generators send each finished completion to a random trainer rank according
+to a pre-set permutation.
+--- Chunk 104 ---
+A gradient update is performed when each data parallel rank has received
+enough completions to make a batch.
+--- Chunk 105 ---
+If the trainers are the bottleneck, as is the case in early training
+when the generations are still short, we accumulate incoming generations into a blocking queue
+with a fixed size limit that controls off-policy degree.
+--- Chunk 106 ---
+A batch may be partitioned into minibatches
+to perform several optimization steps (see Section 6.3).
+--- Chunk 107 ---
+Each minibatch has a fixed number of
+completions but a variable number of tokens, so it is further divided into microbatches of a fixed
+token size.
+--- Chunk 108 ---
+Since we accumulate the gradient over microbatches, the order of samples does not matter.
+--- Chunk 109 ---
+We take advantage of this property to implement a greedy collation algorithm, sorting the sequences
+by descending size and trying to fit them one by one into a free microbatch if there is one or starting
+a new otherwise.
+--- Chunk 110 ---
+This ensures a homogeneous workload across training workers for each minibatch,
+reducing padding by 19%.
+4
+Data curation
+We limit ourselves to problems with verifiable solutions; we use mathematical problems whose
+solution is a numerical answer or expression, and code problems with associated tests.
+--- Chunk 111 ---
+We apply
+extensive filtering, which we describe here.
+6
+--- Chunk 112 ---
+We started with a large but noisy problem set of around 700k samples.
+--- Chunk 113 ---
+We
+first perform comprehensive pre-processing and filtering of the data to ensure all the problems
+are complete and that the final answers were accurate and verifiable with a rule-based system.
+--- Chunk 114 ---
+Particularly, we filter proof-based and multi-part problems for which it is difficult to verify
+correctness.
+--- Chunk 115 ---
+Furthermore, we reformulate multiple-choice problems into statement-based problems
+for more robust verification and increased difficulty.
+--- Chunk 116 ---
+We implemented a two-stage filtering pipeline to curate a dataset of problems
+at a ‘goldilocks’ difficulty level, neither too easy nor too hard for the model to learn from.
+--- Chunk 117 ---
+First, we
+performed an initial difficulty assessment using Mistral Large 2 [MistralAI, 2024], by sampling 16
+solutions for each problem and removing the ones that are either never solved or solved with a high
+success rate.
+--- Chunk 118 ---
+This initial, curated set of problems was then used to train a 24B model via our online
+RL pipeline, resulting in a small but capable checkpoint which we use solely for grading.
+--- Chunk 119 ---
+In the second stage, this stronger, RL-trained model was used to re-grade the entire original dataset.
+--- Chunk 120 ---
+We again sampled 16 responses for each problem, filtering out the easiest and the still-unsolved
+problems.
+--- Chunk 121 ---
+We then further filter out potentially incorrect problems where a majority of samples have
+the same final answer but disagree with the “ground-truth” answer.
+--- Chunk 122 ---
+This is because when the model
+consistently reaches a consensus that contradicts the reference solution, the problems themselves are
+more likely to have wrong ground-truth answers.
+--- Chunk 123 ---
+This two-stage methodology was crucial because a single pass with the initial, weaker Mistral Large 2
+model would have been insufficient.
+--- Chunk 124 ---
+Its reasoning capabilities would likely have caused it to discard
+many genuinely difficult problems by incorrectly classifying them as unsolvable.
+--- Chunk 125 ---
+By using a stronger,
+RL-trained model for a second pass, we ensured that these valuable and challenging training examples
+were accurately assessed and retained.
+--- Chunk 126 ---
+Table 1: Number of math training samples after different filtering stages.
+--- Chunk 127 ---
+Initial data
+w/ Format filtering
+w/ Difficulty filtering
+699k
+501k
+38k
+4.2
+Code
+We gathered code contest data from various sources.
+--- Chunk 128 ---
+Each data point includes a problem statement
+and, when available, correct solutions and related tests.
+--- Chunk 129 ---
+For the training process, we want problem
+statements and a large number of correct tests per problem.
+--- Chunk 130 ---
+In order to achieve this, we first remove
+any problems without solutions and without enough tests.
+--- Chunk 131 ---
+Each solution is then executed on all
+available tests, and we discard tests with insufficient agreement.
+--- Chunk 132 ---
+For tests with sufficient agreement
+but where no solution succeeded, we assume that the test is incorrect and update it to reflect the most
+common result among the solutions’ outputs.
+--- Chunk 133 ---
+In cases where code problems lack tests, we generate
+additional tests and subject them to the same evaluation process.
+--- Chunk 134 ---
+Finally, where applicable, problem statements are duplicated to require code in Python or C++, two
+commonly used languages in competitive programming.
+--- Chunk 135 ---
+This process resulted in a dataset of 35k
+code problems.
+5
+Experiment and results
+In this section we present the Magistral models.
+--- Chunk 136 ---
+Our goal is to answer two questions: (i) how far can
+one get with pure reinforcement learning on a large base model? (ii) given a strong teacher model,
+how can one achieve the strongest possible lightweight model?
+--- Chunk 137 ---
+To this end, we trained Magistral
+Medium, on top of Mistral Medium 3 [MistralAI, 2025] with pure RL; and Magistral Small, which
+began with SFT traces derived from Magistral Medium.
+7
+--- Chunk 138 ---
+Difficulty filtering
+Format filtering
+Math
+Code
+Test cases  
+success filtering
+Performance  
+plateaus
+Length 
+plateaus
+Mistral 
+Medium 3
+Magistral 
+Medium
+Magistral 
+Small
+Mistral 
+Small 3
+SFT
+RL
+RL
+RL
+RL
+RL
+RL
+RL
+More challenging  
+data
+Increase  
+completion length
+Data Filtering
+Training overview
+RL stages
+Magistral Medium traces
+Figure 4: Overview of the filtering, training and RL stages discussed in the paper.
+--- Chunk 139 ---
+We do RL over
+Mistral Medium 3 to get Magistral Medium.
+--- Chunk 140 ---
+We use this model to generate answers for a large set of diverse
+prompts.
+--- Chunk 141 ---
+We use these generated traces to finetune Mistral Small 3 and then perform RL to get Magistral Small.
+5.1
+Evaluation benchmarks and baselines
+We report results on benchmarks that assess capabilities in the fields of mathematics, coding,
+and STEM.
+--- Chunk 142 ---
+For math, we provide results on the American Invitational Mathematics Examination
+benchmarks (AIME’24, AIME’25), and on the MATH dataset [Hendrycks et al., 2021].
+--- Chunk 143 ---
+In coding, we
+include LiveCodeBench (both v5 and v6 versions) [Jain et al., 2024], and Aider Polyglot [Gauthier,
+2024].
+--- Chunk 144 ---
+For STEM, we report results based on the GPQA dataset [Rein et al., 2024].
+--- Chunk 145 ---
+Additionally,
+we also report our results on the text-only questions from Humanity’s Last Exam [Phan et al., 2025]
+which comprises of 2,500 questions across dozens of subjects, including mathematics, humanities,
+and natural sciences.
+--- Chunk 146 ---
+For all evaluation tasks, we set the temperature to 0.7 and use a top-p of 1.0
+for Math evals and GPQA, and 0.95 for coding tasks.
+--- Chunk 147 ---
+The maximum token length is set to 40k for
+AIME and LiveCodeBench, and 32k for all other evaluations.
+--- Chunk 148 ---
+For baselines we include results from [DeepSeek-AI et al., 2025], which reports comparable datapoints
+for training with RL at scale, both with and without SFT on traces from a reasoning model.
+5.2
+Magistral Medium – reasoning RL from scratch
+Here our goal is to evaluate the quality of our RL stack by training a model without any ‘cold
+start’ (i.e priming for reasoning by distillation of reasoning traces).
+--- Chunk 149 ---
+We used Mistral Medium 3
+Instruct [MistralAI, 2025] as the starting checkpoint for this run.
+--- Chunk 150 ---
+Training was done in multiple stages
+with distinct hyper-parameters.
+--- Chunk 151 ---
+Particularly, the stages were designed to ensure the following criteria
+were always satisfied:
+1.
+--- Chunk 152 ---
+As the model performance increases, we increase the difficulty of
+the data.
+--- Chunk 153 ---
+Harder data splits are constructed by including more complicated data (which were
+filtered out in earlier stages) or removing completely solved problems from the data.
+2.
+--- Chunk 154 ---
+Generation length does not stop growing.
+--- Chunk 155 ---
+To prevent stagnation in generation length,
+we increase both maximal allowed completion length and maximal completion length
+lmax −lcache not punished by length penalty (c.f.
+--- Chunk 156 ---
+We increased lmax −lcache
+twice as 16k →24k and 24k →32k.
+3.
+--- Chunk 157 ---
+KV-cache memory burden is not too large.
+--- Chunk 158 ---
+As generation length increases, the memory
+usage associated with the KV cache increases.
+--- Chunk 159 ---
+To address this, we scale down the total
+number of concurrent requests running nasync, the batch size nbatch, and the minibatch size
+nminibatch.
+--- Chunk 160 ---
+The impact of batch size is discussed in Section 6.3.
+--- Chunk 161 ---
+During training we decreased
+batch size twice as 8k →4k and 4k →2k.
+--- Chunk 162 ---
+Table 2 shows the results of Magistral Medium trained with pure RL, compared against analogous
+experiments from [DeepSeek-AI et al., 2025].
+--- Chunk 163 ---
+We find our RL pipeline alone yields a nearly 50%
+accuracy increase in AIME ’24 (pass@1), and 30% on LiveCodeBench (v5).
+5.3
+Magistral Small – RL on top of reasoning SFT bootstrapping
+Given a strong ‘teacher’ model in Magistral Medium, we next explore how one can train the strongest
+possible student model.
+--- Chunk 164 ---
+To do so, we train Magistral Small, which is ‘cold-started’ with SFT traces
+from Magistral Medium.
+8
+--- Chunk 165 ---
+In contrast with pure RL training (which benefits from a small set of extremely clean and difficult
+training points, Section 4), we find diversity of prompts to be important for the reasoning cold-start.
+--- Chunk 166 ---
+We begin by extracting traces with correct answers from the RL training of Magistral Medium,
+excluding those from early steps with short CoTs.
+--- Chunk 167 ---
+We also maintain a mixed difficulty level of the
+problems by limiting number of generations per problem to avoid biasing the collected traces towards
+easier problems and also upsampling problems with lower pass rates.
+--- Chunk 168 ---
+We augment this SFT cold-start data by generating responses from our Magistral Medium on a
+large set of diverse prompts, sourced from OpenThoughts [Guha et al., 2025] and the code subset
+of OpenR1 [Hugging Face, 2025, Penedo et al., 2025].
+--- Chunk 169 ---
+We perform additional filtering on top and
+kept a subset of the prompts.
+--- Chunk 170 ---
+This gives us a reasoning dataset with mixed difficulty.
+--- Chunk 171 ---
+We also include
+10% of datapoints for general instruction tuning in order to preserve non-reasoning capabilities.
+--- Chunk 172 ---
+We
+finetuned Mistral Small 3 Instruct (a 24-billion parameter model) for 4 epochs, and chose the best
+checkpoint on AIME’24 as the initial checkpoint for the following RL stage.
+--- Chunk 173 ---
+We then trained this SFT checkpoint with RL using a batch size of 2048 sequences, and a maximum
+non-penalized completion length lmax −lcache of 32k.
+--- Chunk 174 ---
+We used a sampling temperature of 1.0 for
+our generations, as it provided the best balance between avoiding the lack of diversity seen at lower
+temperatures and the incoherent outputs generated at higher temperatures.
+--- Chunk 175 ---
+We use a εhigh of 0.3, to
+encourage exploration, as the cold-started model yielded responses with far lower entropy.
+--- Chunk 176 ---
+Table 3 shows the performance of the 24B model trained under three different paradigms: with SFT
+alone; with RL alone; and with RL on top of the cold-start checkpoint.
+--- Chunk 177 ---
+Here, contrary to findings
+from [DeepSeek-AI et al., 2025], we find one can get substantial boosts with RL even on a smaller
+base model, over and above distillation from the larger teacher.
+--- Chunk 178 ---
+This underscores the strength of the
+RL stack introduced in this work.
+--- Chunk 179 ---
+Table 2: Results of Magistral Medium trained solely with RL.
+--- Chunk 180 ---
+To reduce variance, we compute the average
+over 64 runs for AIME (shown as pass@1/maj@64) and over 16 runs for LiveCodeBench.
+--- Chunk 181 ---
+Humanity’s Last
+Exam is evaluated only for the text subset.
+--- Chunk 182 ---
+Task
+Mistral
+Medium 3
+Magistral
+Medium
+DeepSeek-
+v3
+DeepSeek-
+R1-Zero
+DeepSeek-
+R1
+Reasoning SFT before RL
+-
+✗
+-
+✗
+✓
+AIME’24
+26.8 / 43.4
+73.6 / 90.0
+39.2
+71.0
+79.8
+AIME’25
+21.2 / 30.0
+64.9 / 83.3
+28.8
+-
+70.0
+MATH-500
+91.0
+94.3
+90.2
+95.9
+97.3
+GPQA
+59.6
+70.8
+59.1
+73.3
+71.5
+LiveCodeBench (v5)
+29.1
+59.4
+36.2
+50.0
+65.9
+Aider Polyglot
+28.9
+47.1
+49.6
+-
+53.3
+LiveCodeBench (v6)
+30.0
+50.3
+-
+-
+-
+Humanity’s Last Exam
+4.4
+9.0
+-
+-
+8.6
+5.4
+Multilingual benchmarks
+To evaluate Magistral’s multilingual capabilities, we interacted with Magistral Medium in multiple
+languages to check that it could reason and answer in the user’s language.
+--- Chunk 183 ---
+We also tested Magistral
+Medium on multilingual (French, Spanish, German, Italian, Russian, and Chinese) versions of the
+AIME 2024 benchmark.
+--- Chunk 184 ---
+These multilingual versions were created by translating the questions from
+English into each of the languages.
+--- Chunk 185 ---
+The results are presented in Table 4.
+--- Chunk 186 ---
+We see that the model
+performs 4.3-9.9% lower on multilingual versions compared to English, which corresponds to 1-3
+questions on the actual AIME test, possibly because we constrained the language of reasoning.
+--- Chunk 187 ---
+This
+degradation is roughly similar to that of the base model.
+--- Chunk 188 ---
+Note that on the multilingual benchmarks,
+all of the reasoning and the final response are conducted in the input language (i.e., not English).
+9
+--- Chunk 189 ---
+Table 3: Performance of Magistral Small compared with different training setups across various bench-
+marks.
+--- Chunk 190 ---
+We report the performance of three distinct 24B models: Mistral Small 24B fine-tuned on reasoning
+traces from Magistral Medium (SFT), Mistral Small 24B trained from scratch with RL (RL only), and Mistral
+Small 24B fine-tuned on Magistral Medium traces and subsequently enhanced with RL (SFT + RL) which is the
+final Magistral Small.
+--- Chunk 191 ---
+We observe that the combination of fine-tuning on reasoning traces with RL leads to the
+best performance.
+--- Chunk 192 ---
+For the evaluation of Humanity’s Last Exam, only the text subset was considered.
+--- Chunk 193 ---
+Task
+SFT
+RL-only
+SFT + RL (Magistral Small)
+AIME’24pass@1
+65.4
+65.8
+70.7
+AIME’24maj@64
+90.0
+86.7
+83.3
+AIME’25pass@1
+55.6
+51.9
+62.8
+AIME’25maj@64
+76.7
+66.7
+76.7
+MATH-500
+93.2
+95.4
+95.9
+GPQA
+63.4
+68.8
+68.2
+LiveCodeBench (v5)
+52.2
+46.4
+55.8
+LiveCodeBench (v6)
+44.6
+42.4
+47.4
+Humanity’s Last Exam
+5.3
+6.1
+6.4
+Table 4: Magistral Medium’s pass@1 performance on multilingual versions of the AIME 2024 benchmark.
+--- Chunk 194 ---
+Language
+English
+French
+Spanish
+German
+Italian
+Russian
+Chinese
+AIME’24 (pass@1)
+73.6
+68.5
+69.3
+66.8
+66.7
+65.0
+63.7
+6
+Ablations
+In this section, we tweak parameters of the training process to investigate what happens when RL is
+performed on only one modality, compare RL to the distillation SFT baseline, and shed light on two
+training choices we had to reckon with, batch and minibatch size, and advantage normalization.
+6.1
+Cross-domain generalization
+We investigate the ability of our model to generalize across domains by training on one domain (math
+or code) and evaluating on the other.
+--- Chunk 195 ---
+Specifically, we conduct two experiments on the 24B model:
+one where the model is trained exclusively on math data and evaluated on both math and code, and
+another where it is trained only on code and evaluated similarly.
+--- Chunk 196 ---
+As shown in Table 5, the model
+demonstrates strong performance to out-of-domain tasks, showcasing the generalization ability of RL.
+6.2
+Distillation vs.
+--- Chunk 197 ---
+RL for small models
+Previous works [DeepSeek-AI et al., 2025] have observed that smaller models relying solely on RL
+may not be able to achieve performance comparable to those distilled from larger reasoning models.
+--- Chunk 198 ---
+However, our findings contradict this observation: we achieved strong results even with pure RL on
+Table 5: Cross-domain generalization during math-only and code-only RL for a 24B model
+Model
+AIME’24
+LiveCodeBench v5
+Starting Checkpoint
+32.2
+22.7
+RL (Math only)
+62.5
+38.3 (+15.6)
+RL (Code only)
+49.7 (+17.5)
+42.7
+10
+--- Chunk 199 ---
+As shown in Figure 5, our Mistral Small 3 with pure RL achieves similar
+performance on AIME’24 as the distilled version.
+--- Chunk 200 ---
+It even outperforms the distilled version on MATH
+and GPQA, but has slightly lower performance on code benchmarks such as LiveCodeBench.
+--- Chunk 201 ---
+These
+results suggest that the benefits of RL are not exclusive to larger base models and hold equally well
+for smaller models.
+--- Chunk 202 ---
+Furthermore, our findings indicate that the RL on top of the distilled checkpoint
+can yield even better performance, leading to over 5 points gain across various benchmarks.
+--- Chunk 203 ---
+Figure 5: Performance of Magistral Small compared with different training setups on various benchmarks.
+--- Chunk 204 ---
+We report the performance of three distinct 24B models: Mistral Small 24B trained from scratch with RL
+(RL only), Mistral Small 24B fine-tuned on reasoning traces from Magistral Medium, and Mistral Small 24B
+fine-tuned on Magistral Medium traces and subsequently enhanced with RL, which is the final Magistral Small.
+--- Chunk 205 ---
+We observe that the combination of fine-tuning on reasoning traces with RL leads to the best performance.
+6.3
+Batch and minibatch size
+Reinforcement learning (RL) algorithms like PPO or GRPO introduce two distinct batch scales.
+--- Chunk 206 ---
+The batch size, denoted as nbatch, refers to the number of sequences collected before updating the
+generator’s weights.
+--- Chunk 207 ---
+The minibatch size, nminibatch, indicates the number of sequences used to compute
+the gradient and perform a single optimization step.
+--- Chunk 208 ---
+It is important to note that nminibatch must divide
+nbatch.
+--- Chunk 209 ---
+Additionally, in an asynchronous RL pipeline, a third scale is introduced: the number of
+concurrent sequences, nasync, which represents the number of sequences being generated in parallel.
+--- Chunk 210 ---
+If the number of concurrently generated sequences nasync is much larger than the batch size nbatch, a
+typical sequence was generated with nasync/nbatch different policies and could be too off-policy.
+--- Chunk 211 ---
+The
+effect becomes worse as we do more than one minibatch update per one batch.
+--- Chunk 212 ---
+To test this hypothesis we prepared a strong 3B model using SFT starting from Ministral 3B, and
+then trained it using GRPO on math-only data with a constant learning rate, a fixed nasync = 4096,
+and different values of nbatch and nminibatch in {1024, 2048, 4096, 8192}.
+--- Chunk 213 ---
+We observe that as long as we keep nbatch = nminibatch and that nbatch is large enough, the performance
+is very similar when plotted depending on the number of processed prompts, as can be seen in
+Figure 6 (a).
+--- Chunk 214 ---
+On the other hand, when nminibatch is decreased while keeping nbatch constant, the
+performance suddenly degrades, even when compared to nbatch reduced to the same nminibatch, as
+highlighted in Figure 6 (b).
+--- Chunk 215 ---
+When nbatch ≤1024, the training becomes less stable, so we opt to keep
+ratio nasync/nbatch ≤2 and nbatch = nminibatch during final training and further ablations.
+6.4
+Advantage normalization
+We experimented with the following advantage normalization methods:
+• Minibatch - normalize advantages within a minibatch
+• Group normalization - normalize advantages within a group over a single prompt
+• No normalization - do not normalize advantages
+Previous works [Liu et al., 2025, Andrychowicz et al., 2020] have noted that normalization over a
+group of generations for a given question can lead to a bias where easy questions or hard questions are
+11
+--- Chunk 216 ---
+Figure 6: Impact of batch and minibatch sizes on RL training rewards. (a) Reward during RL training
+of 3B model on math data for different batch sizes, while keeping minibatch size equal to batch size.
+--- Chunk 217 ---
+Number
+of concurrently generated sequences is kept constant at 4096. (b) Reward during RL training in the same setup
+for different minibatch sizes at fixed batch size of 8192 sequences.
+--- Chunk 218 ---
+We observe that performance doesn’t depend
+strongly on batch size, but degrades when there are more than 2 minibatches in a batch.
+upweighted due to their lower standard deviation values.
+--- Chunk 219 ---
+However, we did not observe any significant
+effects on evaluation performance or the growth of the length as shown in Figure 7.
+--- Chunk 220 ---
+Hence, we
+decided to use minibatch normalization for all our experiments.
+--- Chunk 221 ---
+Figure 7: Results for training with different advantage normalizations in GRPO.
+--- Chunk 222 ---
+We observe that different
+normalization methods do not lead to significant difference either in evaluation performance or the length
+growth during training.
+7
+Analysis
+In this section, we investigate the dynamics of RL training and present evidence that increasing
+completion length is the main resource that improves the performance of the model.
+--- Chunk 223 ---
+Those dynamics
+are not destructive to previous capabilities, and the reasoning capabilities can even generalize:
+multimodal reasoning gets improved for free, and function calling and instruction following remain
+unchanged or even get a small boost.
+--- Chunk 224 ---
+Additionally, we discuss two ideas that didn’t work for us -
+giving more fine-grained rewards in code tasks based on test completion rate and controlling entropy
+via entropy bonus term in the loss.
+7.1
+Reinforcement learning moves weights in low-dimensional space
+To better understand the dynamics of Magistral during RL training, we follow the method of [Li
+et al., 2018] to analyze the Magistral Small RL-only run and visualize the loss landscape around the
+final checkpoint.
+--- Chunk 225 ---
+First, we stack the weights of all intermediate checkpoints in a matrix X ∈RT ×W , where T is
+the number of checkpoints and W is the number of weights.
+--- Chunk 226 ---
+Then, we subtract the mean weights
+12
+--- Chunk 227 ---
+across the T checkpoints and perform a PCA analysis to find two principal components of the
+matrix X in the weight space.
+--- Chunk 228 ---
+Since the weight space is very high-dimensional, we use the iterative
+Lanczos-Arnoldi algorithm [Saad, 2003] to find the top-2 eigenvectors of XT X.
+--- Chunk 229 ---
+As a result, we
+obtain two components c1 and c2 that we L2-normalize to have a unit norm.
+--- Chunk 230 ---
+Second, we perturb the final checkpoint weights w∗∈RW by adding two components as
+w(α1, α2) = w∗+ α1c1 + α2c2
+(2)
+We evaluate each perturbed checkpoint on a fixed batch of 512 prompts, generating 16 completions
+per prompt, and using the same reward setting as in Magistral Small RL-only run.
+--- Chunk 231 ---
+Finally, we
+compute mean reward and mean output length for each checkpoint and plot it in (α1, α2) coordinates.
+--- Chunk 232 ---
+Figure 8: Reward and length evolution in w(α1, α2) hyperplane.
+--- Chunk 233 ---
+Black arrow trajectory is a projection
+of intermediate checkpoints of Magistral Small RL-only run on the hyperplane.
+--- Chunk 234 ---
+Black points are perturbed
+checkpoints computed using Equation 2.
+--- Chunk 235 ---
+Intermediate values are computed with linear interpolation on the
+triangular grid.
+--- Chunk 236 ---
+We clearly observe that there is a “length” direction - as model goes from right to left in Figure 8,
+mean reward and output length grow up until the point where length starts to hit length penalty and
+maximally allowed completion length.
+--- Chunk 237 ---
+We additionally plot dependence of raw reward without length
+penalty on output length, observing a ubiquitous log scaling in Figure 9.
+--- Chunk 238 ---
+Figure 9: Reward scaling with output length.
+--- Chunk 239 ---
+Each point corresponds to a perturbed checkpoint computed
+with Equation 2.
+--- Chunk 240 ---
+We generate 8192 completions with the checkpoint and evaluate mean output length and raw
+reward (reward without length penalty).
+--- Chunk 241 ---
+We perform linear regression on checkpoints with mean output length
+between 1500 and 8000 and observe that reward scales logarithmically with the output length.
+7.2
+Eating the multimodal free lunch
+The initial checkpoints utilized for RL training, Mistral Small 3 and Mistral Medium 3, are multimodal
+models and come with associated vision encoders.
+--- Chunk 242 ---
+During the RL training phase, as the models are
+13
+--- Chunk 243 ---
+Figure 10: Performance on multimodal benchmarks.
+trained on text-only data, one might expect the multimodal performance to degrade.
+--- Chunk 244 ---
+However, on the
+contrary, we discover that the models not only retain their multimodal capabilities, but unexpectedly
+develop enhanced multimodal reasoning abilities.
+--- Chunk 245 ---
+The resulting models also showcase improved
+performance on multimodal benchmarks.
+--- Chunk 246 ---
+We report results multimodal benchmarks designed to assess reasoning capabilities, specifically
+MathVista [Lu et al., 2024], MMMU [Yue et al., 2024], and MMMU-Pro [Yue et al., 2025].
+--- Chunk 247 ---
+Our results
+in Figure 10 show no performance regression across most benchmarks, with notable improvements
+observed on MMMU (+5%, reaching 70%), MMMU-Pro-Standard (+4.4%, reaching 57.9%) and
+MMMU-Pro-Vision (+12%, reaching 52.1%).
+--- Chunk 248 ---
+While the most significant improvements are seen in
+scientific questions that require textual reasoning, we observe that the model transfers its extended
+thinking process across all types of questions (see Figures 14 15 16 for qualitative examples).
+7.3
+Impact of RL on other capabilities
+Similar to the multimodal capabilities mentioned in Section 7.2, our RL checkpoint maintains and
+even improves its tool calling and instruction following capabilities [Zhou et al., 2023] (Table 6).
+--- Chunk 249 ---
+This allows us to integrate the model out-of-the-box with existing tools as shown.
+--- Chunk 250 ---
+Table 6: Benchmarks before and after reinforcement learning.
+--- Chunk 251 ---
+Internal bench is Mistral’s internal function
+calling benchmark.
+--- Chunk 252 ---
+We use an internal version of IFEval that fixes some issues with the public version.
+--- Chunk 253 ---
+The
+scores are not comparable with other publicly shared scores.
+--- Chunk 254 ---
+Category
+Benchmark
+Mistral Medium 3
+Magistral Medium
+Function calling
+Internal bench
+87.2
+87.4
+Instruction following
+IFEval
+86.8
+87.4
+7.4
+Unsuccessful approaches
+In this section, we present various approaches that we tried but ultimately did not adopt, as they did
+not yield any performance improvements.
+7.4.1
+Partial reward for code data
+The strict requirements of competitive programming, in terms of correctness and adherence to
+complexity constraints, result in sparse rewards, often causing many code generations to be discarded
+due to limited reward diversity.
+--- Chunk 255 ---
+To address this, we experimented with a proportional reward: based on the fraction of tests passed, as
+opposed to the binary reward discussed in Section 2.2.2.
+--- Chunk 256 ---
+In an ablation with a 24B model over 250
+14
+--- Chunk 257 ---
+steps, we found that training with proportional rewards was faster, discarding three times less data.
+--- Chunk 258 ---
+However, this approach led to slightly lower final performance on benchmarks, with a 2% decrease
+on LiveCodeBench (Figure 11a), and slower growth in generation length (Figure 11b).
+--- Chunk 259 ---
+The hope was that a reward based on the fraction of tests passed should provide a richer signal than
+a simple pass/fail for RL training.
+--- Chunk 260 ---
+However, the potential issue is that partial rewards could also
+provide false signal to incorrect solutions and be more sensitive to minor inconsistencies between
+implementations, potentially leading to less meaningful training batches.
+--- Chunk 261 ---
+Figure 11: Binary vs proportional reward for code problems. (a) Accuracy on AIME and LiveCodeBench af-
+ter 250 steps of training with binary reward and proportional reward.
+--- Chunk 262 ---
+Performance on LiveCodeBench is 2% lower
+with proportional rewards. (b) Length evolution throughout training.
+--- Chunk 263 ---
+Length increases more with binary rewards.
+7.4.2
+Entropy targeting
+Figure 12:
+Impact of εhigh on the entropy distribution throughout training. (a) Entropy evolution
+throughout training of a 3B model on a math only dataset.
+--- Chunk 264 ---
+Entropy drops with entropy bonus, while higher
+εhigh maintains entropy, allowing for better exploration. (b) Entropy evolution throughout training of a 3B model
+on a math and code dataset.
+--- Chunk 265 ---
+Entropy explodes with entropy bonus, even though the coefficient is the same
+as the math only version.
+--- Chunk 266 ---
+Higher εhigh behaves better, allowing entropy to decrease.
+--- Chunk 267 ---
+To encourage exploration and prevent entropy collapse during RL training, a common strategy in
+the literature [Schulman et al., 2017] is to add an entropy bonus loss term.
+--- Chunk 268 ---
+However, we found this
+strategy to be unstable as the effect of the entropy bonus varies significantly depending on the dataset.
+--- Chunk 269 ---
+For a math-only dataset, entropy drops with the entropy bonus, while a higher εhigh maintains entropy,
+enhancing exploration (Figure 12a).
+--- Chunk 270 ---
+On a math and code dataset, entropy increases excessively with
+the entropy bonus (even with the same coefficient as in the math-only run), while a higher εhigh allows
+entropy to decrease, improving exploitation (Figure 12b).
+15
+--- Chunk 271 ---
+Instead, we found it more effective to depend on εhigh, as also noted in literature [Yu et al., 2025,
+Wang et al., 2025].
+--- Chunk 272 ---
+This method avoids the instability issues associated with entropy bonuses.
+--- Chunk 273 ---
+Another approach for controlling entropy is adding a KL term to the PPO loss.
+--- Chunk 274 ---
+However, as the
+generation distribution is expected to deviate significantly from the original model, we found that
+using a KL penalty primarily hinders training, consistent with previous findings [Yu et al., 2025].
+--- Chunk 275 ---
+We
+attempted using an exponential moving average of the weights during training as a reference for KL,
+but found it simpler to manually adjust εhigh.
+--- Chunk 276 ---
+Figure 13: Benchmark performance of Magistral Medium fine-tuned on open-source traces.
+--- Chunk 277 ---
+All results are
+reported using pass@1.
+--- Chunk 278 ---
+The shaded region highlights the additional improvement achieved through RL on top of
+supervised fine-tuning.
+--- Chunk 279 ---
+We find that while fine-tuning on open-source traces yields strong results, applying RL
+further enhances performance significantly.
+--- Chunk 280 ---
+In particular, the accuracy on AIME’25 increases by more than 12%.
+--- Chunk 281 ---
+Please note that the performance on GPQA Diamond drops after RL from 72.9% to 71.0%.
+8
+RL on model finetuned using OSS reasoning traces
+As an experiment, we also tried to first finetune Mistral Medium 3 using open source reasoning
+datasets OpenThoughts [Guha et al., 2025] and the code subset of OpenR1 [Hugging Face, 2025,
+Penedo et al., 2025] including both the prompts and the generations from these datasets i.e.
+--- Chunk 282 ---
+This included a total of about 1.3M generations.
+--- Chunk 283 ---
+We then run RL on top of this
+finetuned checkpoint using our most difficult subset of the data.
+--- Chunk 284 ---
+As shown in Figure 13, applying RL
+yields substantial performance gains over the SFT checkpoint.
+--- Chunk 285 ---
+Notably, the RL model improves by
+over 10 points on AIME’25 and 5 points on LiveCodeBench, achieving a final performance level on
+par with Deepseek-R1 on code and math benchmarks.
+9
+Conclusion
+Magistral is our first step towards generally capable systems with reinforcement learning.
+--- Chunk 286 ---
+We look
+forward to the next research problems ahead of us: what loss and optimization algorithms are the
+most appropriate, how much gain can be unlocked by bootstrapping a model on its own reasoning
+traces, or how to scale to the next order of magnitude of compute.
+--- Chunk 287 ---
+Looking ahead, we are also
+excited to push the boundaries of RL across a whole range of applications, with tool-use, integrated
+multimodality, and agents.
+--- Chunk 288 ---
+As we explore this frontier, we remain committed to contributing to
+science in a transparent and optimistic manner.
+16
+--- Chunk 289 ---
+Core contributors
+Abhinav Rastogi, Albert Q.
+--- Chunk 290 ---
+Jiang, Andy Lo, Gabrielle Berrada, Guillaume Lample, Jason Rute, Joep
+Barmentlo, Karmesh Yadav, Kartik Khandelwal, Khyathi Raghavi Chandu, Léonard Blier, Lucile
+Saulnier, Matthieu Dinot, Maxime Darrin, Neha Gupta, Roman Soletskyi, Sagar Vaze, Teven Le
+Scao, Yihan Wang
+Contributors
+Adam Yang, Alexander H.
+--- Chunk 291 ---
+Liu, Alexandre Sablayrolles, Amélie Héliou, Amélie Martin, Andy
+Ehrenberg, Anmol Agarwal, Antoine Roux, Arthur Darcet, Arthur Mensch, Baptiste Bout, Baptiste
+Rozière, Baudouin De Monicault, Chris Bamford, Christian Wallenwein, Christophe Renaudin,
+Clémence Lanfranchi, Darius Dabert, Devon Mizelle, Diego de las Casas, Elliot Chane-Sane, Emilien
+Fugier, Emma Bou Hanna, Gauthier Delerce, Gauthier Guinet, Georgii Novikov, Guillaume Martin,
+Himanshu Jaju, Jan Ludziejewski, Jean-Hadrien Chabran, Jean-Malo Delignon, Joachim Studnia,
+Jonas Amar, Josselin Somerville Roberts, Julien Denize, Karan Saxena, Kush Jain, Lingxiao Zhao,
+Louis Martin, Luyu Gao, Lélio Renard Lavaud, Marie Pellat, Mathilde Guillaumin, Mathis Felardos,
+Maximilian Augustin, Mickaël Seznec, Nikhil Raghuraman, Olivier Duchenne, Patricia Wang,
+Patrick von Platen, Patryk Saffer, Paul Jacob, Paul Wambergue, Paula Kurylowicz, Pavankumar
+Reddy Muddireddy, Philomène Chagniot, Pierre Stock, Pravesh Agrawal, Romain Sauvestre, Rémi
+Delacourt, Sanchit Gandhi, Sandeep Subramanian, Shashwat Dalal, Siddharth Gandhi, Soham Ghosh,
+Srijan Mishra, Sumukh Aithal, Szymon Antoniak, Thibault Schueller, Thibaut Lavril, Thomas Robert,
+Thomas Wang, Timothée Lacroix, Valeriia Nemychnikova, Victor Paltz, Virgile Richard, Wen-Ding
+Li, William Marshall, Xuanyu Zhang, Yunhao Tang
+17
+--- Chunk 292 ---
+References
+Marcin Andrychowicz, Anton Raichuk, Piotr Sta´nczyk, Manu Orsini, Sertan Girgin, Raphael Marinier,
+Léonard Hussenot, Matthieu Geist, Olivier Pietquin, Marcin Michalski, Sylvain Gelly, and Olivier
+Bachem.
+--- Chunk 293 ---
+What matters in on-policy reinforcement learning? a large-scale empirical study, 2020.
+--- Chunk 294 ---
+URL https://arxiv.org/abs/2006.05990.
+--- Chunk 295 ---
+DeepSeek-AI, Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song, Ruoyu Zhang, Runxin Xu,
+Qihao Zhu, Shirong Ma, Peiyi Wang, Xiao Bi, Xiaokang Zhang, Xingkai Yu, Yu Wu, Z.
+--- Chunk 296 ---
+Wu,
+Zhibin Gou, Zhihong Shao, Zhuoshu Li, Ziyi Gao, Aixin Liu, Bing Xue, Bingxuan Wang, Bochao
+Wu, Bei Feng, Chengda Lu, Chenggang Zhao, Chengqi Deng, Chenyu Zhang, Chong Ruan,
+Damai Dai, Deli Chen, Dongjie Ji, Erhang Li, Fangyun Lin, Fucong Dai, Fuli Luo, Guangbo Hao,
+Guanting Chen, Guowei Li, H.
+--- Chunk 297 ---
+Zhang, Han Bao, Hanwei Xu, Haocheng Wang, Honghui Ding,
+Huajian Xin, Huazuo Gao, Hui Qu, Hui Li, Jianzhong Guo, Jiashi Li, Jiawei Wang, Jingchang
+Chen, Jingyang Yuan, Junjie Qiu, Junlong Li, J.
+--- Chunk 298 ---
+Cai, Jiaqi Ni, Jian Liang, Jin Chen, Kai Dong,
+Kai Hu, Kaige Gao, Kang Guan, Kexin Huang, Kuai Yu, Lean Wang, Lecong Zhang, Liang Zhao,
+Litong Wang, Liyue Zhang, Lei Xu, Leyi Xia, Mingchuan Zhang, Minghua Zhang, Minghui Tang,
+Meng Li, Miaojun Wang, Mingming Li, Ning Tian, Panpan Huang, Peng Zhang, Qiancheng Wang,
+Qinyu Chen, Qiushi Du, Ruiqi Ge, Ruisong Zhang, Ruizhe Pan, Runji Wang, R.
+--- Chunk 299 ---
+Jin, Ruyi Chen, Shanghao Lu, Shangyan Zhou, Shanhuang Chen, Shengfeng Ye, Shiyu Wang,
+Shuiping Yu, Shunfeng Zhou, Shuting Pan, S.
+--- Chunk 300 ---
+Li, Shuang Zhou, Shaoqing Wu, Shengfeng
+Ye, Tao Yun, Tian Pei, Tianyu Sun, T.
+--- Chunk 301 ---
+Wang, Wangding Zeng, Wanjia Zhao, Wen Liu, Wenfeng
+Liang, Wenjun Gao, Wenqin Yu, Wentao Zhang, W.
+--- Chunk 302 ---
+Xiao, Wei An, Xiaodong Liu, Xiaohan
+Wang, Xiaokang Chen, Xiaotao Nie, Xin Cheng, Xin Liu, Xin Xie, Xingchao Liu, Xinyu Yang,
+Xinyuan Li, Xuecheng Su, Xuheng Lin, X.
+--- Chunk 303 ---
+Li, Xiangyue Jin, Xiaojin Shen, Xiaosha Chen,
+Xiaowen Sun, Xiaoxiang Wang, Xinnan Song, Xinyi Zhou, Xianzu Wang, Xinxia Shan, Y.
+--- Chunk 304 ---
+Wei, Yang Zhang, Yanhong Xu, Yao Li, Yao Zhao, Yaofeng Sun, Yaohui Wang,
+Yi Yu, Yichao Zhang, Yifan Shi, Yiliang Xiong, Ying He, Yishi Piao, Yisong Wang, Yixuan Tan,
+Yiyang Ma, Yiyuan Liu, Yongqiang Guo, Yuan Ou, Yuduan Wang, Yue Gong, Yuheng Zou, Yujia
+He, Yunfan Xiong, Yuxiang Luo, Yuxiang You, Yuxuan Liu, Yuyang Zhou, Y.
+--- Chunk 305 ---
+Zhu, Yanhong
+Xu, Yanping Huang, Yaohui Li, Yi Zheng, Yuchen Zhu, Yunxian Ma, Ying Tang, Yukun Zha,
+Yuting Yan, Z.
+--- Chunk 306 ---
+Ren, Zehui Ren, Zhangli Sha, Zhe Fu, Zhean Xu, Zhenda Xie, Zhengyan Zhang,
+Zhewen Hao, Zhicheng Ma, Zhigang Yan, Zhiyu Wu, Zihui Gu, Zijia Zhu, Zijun Liu, Zilin Li,
+Ziwei Xie, Ziyang Song, Zizheng Pan, Zhen Huang, Zhipeng Xu, Zhongyu Zhang, and Zhen
+Zhang.
+--- Chunk 307 ---
+Deepseek-r1: Incentivizing reasoning capability in llms via reinforcement learning, 2025.
+--- Chunk 308 ---
+URL https://arxiv.org/abs/2501.12948.
+--- Chunk 309 ---
+Lasse Espeholt, Hubert Soyer, Remi Munos, Karen Simonyan, Vlad Mnih, Tom Ward, Yotam Doron,
+Vlad Firoiu, Tim Harley, Iain Dunning, et al.
+--- Chunk 310 ---
+Impala: Scalable distributed deep-rl with importance
+weighted actor-learner architectures.
+--- Chunk 311 ---
+In International conference on machine learning, pages
+1407–1416.
+--- Chunk 312 ---
+Polyglot Benchmark. https://github.com/Aider-AI/polyglot-benchmark,
+2024.
+--- Chunk 313 ---
+URL https://github.com/Aider-AI/polyglot-benchmark.
+--- Chunk 314 ---
+Cod-
+ing problems sourced from Exercism language tracks.
+--- Chunk 315 ---
+Etash Guha, Ryan Marten, Sedrick Keh, Negin Raoof, Georgios Smyrnis, Hritik Bansal, Marianna
+Nezhurina, Jean Mercat, Trung Vu, Zayne Sprague, Ashima Suvarna, Benjamin Feuer, Liangyu
+Chen, Zaid Khan, Eric Frankel, Sachin Grover, Caroline Choi, Niklas Muennighoff, Shiye Su,
+Wanjia Zhao, John Yang, Shreyas Pimpalgaonkar, Kartik Sharma, Charlie Cheng-Jie Ji, Yichuan
+Deng, Sarah Pratt, Vivek Ramanujan, Jon Saad-Falcon, Jeffrey Li, Achal Dave, Alon Albalak,
+Kushal Arora, Blake Wulfe, Chinmay Hegde, Greg Durrett, Sewoong Oh, Mohit Bansal, Saadia
+Gabriel, Aditya Grover, Kai-Wei Chang, Vaishaal Shankar, Aaron Gokaslan, Mike A.
+--- Chunk 316 ---
+Merrill,
+Tatsunori Hashimoto, Yejin Choi, Jenia Jitsev, Reinhard Heckel, Maheswaran Sathiamoorthy,
+Alexandros G.
+--- Chunk 317 ---
+Openthoughts: Data recipes for reasoning models,
+2025.
+--- Chunk 318 ---
+URL https://arxiv.org/abs/2506.04178.
+--- Chunk 319 ---
+Dan Hendrycks, Collin Burns, Saurav Kadavath, Akul Arora, Steven Basart, Eric Tang, Dawn Song,
+and Jacob Steinhardt.
+--- Chunk 320 ---
+Measuring mathematical problem solving with the math dataset. arXiv
+preprint arXiv:2103.03874, 2021.
+18
+--- Chunk 321 ---
+Jian Hu, Xibin Wu, Zilin Zhu, Weixun Wang, Dehao Zhang, Yu Cao, et al.
+--- Chunk 322 ---
+Openrlhf: An easy-to-use,
+scalable and high-performance rlhf framework. arXiv preprint arXiv:2405.11143, 2024.
+--- Chunk 323 ---
+Jingcheng Hu, Yinmin Zhang, Qi Han, Daxin Jiang, Xiangyu Zhang, and Heung-Yeung Shum.
+--- Chunk 324 ---
+Open-reasoner-zero: An open source approach to scaling up reinforcement learning on the base
+model, 2025.
+--- Chunk 325 ---
+URL https://arxiv.org/abs/2503.24290.
+--- Chunk 326 ---
+Open r1: A fully open reproduction of deepseek-r1, January 2025.
+--- Chunk 327 ---
+URL https:
+//github.com/huggingface/open-r1.
+--- Chunk 328 ---
+Aaron Jaech, Adam Kalai, Adam Lerer, Adam Richardson, Ahmed El-Kishky, Aiden Low, Alec
+Helyar, Aleksander Madry, Alex Beutel, Alex Carney, et al.
+--- Chunk 329 ---
+Openai o1 system card. arXiv preprint
+arXiv:2412.16720, 2024.
+--- Chunk 330 ---
+Naman Jain, King Han, Alex Gu, Wen-Ding Li, Fanjia Yan, Tianjun Zhang, Sida Wang, Armando
+Solar-Lezama, Koushik Sen, and Ion Stoica.
+--- Chunk 331 ---
+Livecodebench: Holistic and contamination free
+evaluation of large language models for code. arXiv preprint arXiv:2403.07974, 2024.
+--- Chunk 332 ---
+Armand Joulin, Edouard Grave, Piotr Bojanowski, Matthijs Douze, Hérve Jégou, and Tomas Mikolov.
+--- Chunk 333 ---
+Fasttext.zip: Compressing text classification models. arXiv preprint arXiv:1612.03651, 2016.
+--- Chunk 334 ---
+Hao Li, Zheng Xu, Gavin Taylor, Christoph Studer, and Tom Goldstein.
+--- Chunk 335 ---
+Visualizing the loss landscape
+of neural nets, 2018.
+--- Chunk 336 ---
+URL https://arxiv.org/abs/1712.09913.
+--- Chunk 337 ---
+Zichen Liu, Changyu Chen, Wenjun Li, Penghui Qi, Tianyu Pang, Chao Du, Wee Sun Lee, and Min
+Lin.
+--- Chunk 338 ---
+Understanding r1-zero-like training: A critical perspective. arXiv preprint arXiv:2503.20783,
+2025.
+--- Chunk 339 ---
+Pan Lu, Hritik Bansal, Tony Xia, Jiacheng Liu, Chunyuan Li, Hannaneh Hajishirzi, Hao Cheng,
+Kai-Wei Chang, Michel Galley, and Jianfeng Gao.
+--- Chunk 340 ---
+Mathvista: Evaluating mathematical reasoning
+of foundation models in visual contexts.
+--- Chunk 341 ---
+In International Conference on Learning Representations
+(ICLR), 2024.
+--- Chunk 342 ---
+Mistral large 2. https://mistral.ai/news/mistral-large-2407, 2024.
+--- Chunk 343 ---
+Mistral medium 3. https://mistral.ai/fr/news/mistral-medium-3, 2025.
+--- Chunk 344 ---
+Michael Noukhovitch, Shengyi Huang, Sophie Xhonneux, Arian Hosseini, Rishabh Agarwal, and
+Aaron Courville.
+--- Chunk 345 ---
+Asynchronous rlhf: Faster and more efficient off-policy rl for language models.
+arXiv preprint arXiv:2410.18252, 2024.
+--- Chunk 346 ---
+Guilherme Penedo, Anton Lozhkov, Hynek Kydlíˇcek, Loubna Ben Allal, Edward Beeching,
+Agustín Piqueres Lajarín, Quentin Gallouédec, Nathan Habib, Lewis Tunstall, and Leandro von
+Werra.
+--- Chunk 347 ---
+Codeforces cots. https://huggingface.co/datasets/open-r1/codeforces-cots,
+2025.
+--- Chunk 348 ---
+Long Phan, Alice Gatti, Ziwen Han, Nathaniel Li, Josephina Hu, Hugh Zhang, Chen Bo Calvin
+Zhang, Mohamed Shaaban, John Ling, Sean Shi, et al.
+--- Chunk 349 ---
+Humanity’s last exam. arXiv preprint
+arXiv:2501.14249, 2025.
+--- Chunk 350 ---
+David Rein, Betty Li Hou, Asa Cooper Stickland, Jackson Petty, Richard Yuanzhe Pang, Julien Dirani,
+Julian Michael, and Samuel R Bowman.
+--- Chunk 351 ---
+Gpqa: A graduate-level google-proof q&a benchmark.
+--- Chunk 352 ---
+In
+First Conference on Language Modeling, 2024.
+--- Chunk 353 ---
+Iterative methods for sparse linear systems.
+--- Chunk 354 ---
+John Schulman, Filip Wolski, Prafulla Dhariwal, Alec Radford, and Oleg Klimov.
+--- Chunk 355 ---
+Proximal policy
+optimization algorithms. arXiv preprint arXiv:1707.06347, 2017.
+--- Chunk 356 ---
+Zhihong Shao, Peiyi Wang, Qihao Zhu, Runxin Xu, Junxiao Song, Xiao Bi, Haowei Zhang,
+Mingchuan Zhang, Y.
+--- Chunk 357 ---
+Deepseekmath: Pushing the limits of mathemat-
+ical reasoning in open language models, 2024.
+--- Chunk 358 ---
+URL https://arxiv.org/abs/2402.03300.
+19
+--- Chunk 359 ---
+Guangming Sheng, Chi Zhang, Zilingfeng Ye, Xibin Wu, Wang Zhang, Ru Zhang, Yanghua Peng,
+Haibin Lin, and Chuan Wu.
+--- Chunk 360 ---
+Hybridflow: A flexible and efficient rlhf framework. arXiv preprint
+arXiv:2409.19256, 2024.
+--- Chunk 361 ---
+Shenzhi Wang, Le Yu, Chang Gao, Chujie Zheng, Shixuan Liu, Rui Lu, Kai Dang, Xionghui Chen,
+Jianxin Yang, Zhenru Zhang, et al.
+--- Chunk 362 ---
+Beyond the 80/20 rule: High-entropy minority tokens drive
+effective reinforcement learning for llm reasoning. arXiv preprint arXiv:2506.01939, 2025.
+--- Chunk 363 ---
+Bo Wu, Sid Wang, Yunhao Tang, Jia Ding, Eryk Helenowski, Liang Tan, Tengyu Xu, Tushar Gowda,
+Zhengxing Chen, Chen Zhu, et al.
+--- Chunk 364 ---
+Llamarl: A distributed asynchronous reinforcement learning
+framework for efficient large-scale llm trainin. arXiv preprint arXiv:2505.24034, 2025.
+--- Chunk 365 ---
+Qiying Yu, Zheng Zhang, Ruofei Zhu, Yufeng Yuan, Xiaochen Zuo, Yu Yue, Tiantian Fan, Gaohong
+Liu, Lingjun Liu, Xin Liu, et al.
+--- Chunk 366 ---
+Dapo: An open-source llm reinforcement learning system at scale.
+arXiv preprint arXiv:2503.14476, 2025.
+--- Chunk 367 ---
+Xiang Yue, Yuansheng Ni, Kai Zhang, Tianyu Zheng, Ruoqi Liu, Ge Zhang, Samuel Stevens, Dongfu
+Jiang, Weiming Ren, Yuxuan Sun, Cong Wei, Botao Yu, Ruibin Yuan, Renliang Sun, Ming Yin,
+Boyuan Zheng, Zhenzhu Yang, Yibo Liu, Wenhao Huang, Huan Sun, Yu Su, and Wenhu Chen.
+--- Chunk 368 ---
+Mmmu: A massive multi-discipline multimodal understanding and reasoning benchmark for expert
+agi.
+--- Chunk 369 ---
+Xiang Yue, Tianyu Zheng, Yuansheng Ni, Yubo Wang, Kai Zhang, Shengbang Tong, Yuxuan Sun,
+Botao Yu, Ge Zhang, Huan Sun, Yu Su, Wenhu Chen, and Graham Neubig.
+--- Chunk 370 ---
+Mmmu-pro: A more
+robust multi-discipline multimodal understanding benchmark.
+--- Chunk 371 ---
+Jeffrey Zhou, Tianjian Lu, Swaroop Mishra, Siddhartha Brahma, Sujoy Basu, Yi Luan, Denny
+Zhou, and Le Hou.
+--- Chunk 372 ---
+Instruction-following evaluation for large language models, 2023.
+--- Chunk 373 ---
+URL
+https://arxiv.org/abs/2311.07911.
+20
+--- Chunk 374 ---
+Problem:
+A beam of light passes from medium 1 to medium 2 to medium 3 as shown in the diagram.
+--- Chunk 375 ---
+What may be concluded about the speed of light in each medium?
+--- Chunk 376 ---
+A. v3 > v1 > v2
+B. v1 > v2 > v3
+C. v1 > v3 < v2
+D. v2 > v3 > v1
+Model Generation:
+<think> First, I need to understand the behavior of light as it passes through different mediums.
+--- Chunk 377 ---
+According to Snell’s Law, the speed of light changes when it enters a medium with a different
+refractive index.
+--- Chunk 378 ---
+The refractive index (n) of a medium is inversely related to the speed of light
+(v) in that medium, meaning that as the refractive index increases, the speed of light decreases.
+--- Chunk 379 ---
+Looking at the diagram:
+The light beam starts from medium 1 to medium 2, bending towards the
+normal line.
+--- Chunk 380 ---
+This indicates that medium 2 has a higher refractive index than medium 1 because
+light bends towards the normal when it slows down (entering a denser medium).
+--- Chunk 381 ---
+The light beam that
+passes from medium 2 to medium 3, bending away from the normal line.
+--- Chunk 382 ---
+This indicates that medium 3
+has a lower refractive index than medium 2 because light bends away from the normal when it speeds
+up (entering a less dense medium).
+--- Chunk 383 ---
+Now, let’s analyze the speed of light in each medium:
+In medium 1, the speed of light is v1.
+--- Chunk 384 ---
+In
+medium 2, since the light bends towards the normal when entering from medium 1, medium 2 has a
+higher refractive index than medium 1.
+--- Chunk 385 ---
+Therefore, the speed of light in medium 2 is v2, is less
+than in medium 1, so v1
+>
+v2.
+--- Chunk 386 ---
+In medium 3, since the light bends away from the normal when
+entering from medium 2, medium 3 has a lower refractive index than medium 2.
+--- Chunk 387 ---
+Therefore, the speed
+of light in medium 3, v3, is greater than in medium 2, so v3 > v2.
+--- Chunk 388 ---
+Now, we need to compare the speeds v1, v2, and v3.
+--- Chunk 389 ---
+From the above analysis, v1
+>
+v2 v3
+>
+v2
+But we also need to determine the relationship between v1 and v3.
+--- Chunk 390 ---
+Since medium 3 has a lower
+refractive index than medium 1(because light bends away from the normal when transitioning from
+medium 2 to medium 3, and we already know medium 2 has a higher refractive index than medium 1),
+it implies that medium 3 is less dense than medium 1.
+--- Chunk 391 ---
+Therefore, the speed of light in medium 3
+will be greater than in medium 1.
+--- Chunk 392 ---
+So, in sum:
+v3 > v1 > v2
+Looking at the options provided:
+A. v3 > v1 > v2 B. v1 > v2 > v3 C. v1 > v3 < v2 D. v2 >
+v3 > v1 The correct option that matches our conclusion is A.
+</think>
+Final Answer: A
+Figure 14: A physics multimodal problem and its solution generated by Magistral Medium.
+21
+--- Chunk 393 ---
+Problem:
+Which arrow points to a hydrogen bond?
+--- Chunk 394 ---
+Model Generation:
+<think> Alright, I have this image showing a molecular structure with arrows labeled a, b, c, and
+d.
+--- Chunk 395 ---
+The question is asking which arrow points to a hydrogen bond.
+--- Chunk 396 ---
+First, I need to understand what a hydrogen bond is.
+--- Chunk 397 ---
+A hydrogen bond is a type of attractive
+interaction between a hydrogen atom and an electronegative atom like oxygen, nitrogen, or fluorine.
+--- Chunk 398 ---
+In this case, since we have water molecules (H2O), the hydrogen bonds would be between the
+hydrogen atoms and the oxygen atoms of different water molecules.
+--- Chunk 399 ---
+Looking at the image:
+• Arrow a points to a bond between a hydrogen atom and an oxygen atom within the same water
+molecule.
+--- Chunk 400 ---
+That’s a covalent bond, not a hydrogen bond.
+• Arrow b points to another bond within a single water molecule, which is again a covalent bond.
+• Arrow c points to a bond between a hydrogen atom of one water molecule and an oxygen atom of
+another water molecule.
+--- Chunk 401 ---
+This looks like a hydrogen bond because it’s between different water
+molecules.
+• Arrow d points to a bond between hydrogen and oxygen within a single water molecule, so that’s
+another covalent bond.
+--- Chunk 402 ---
+From this, it seems that arrow c is pointing to the hydrogen bond between the hydrogen of one
+water molecule and the oxygen of another water molecule.
+--- Chunk 403 ---
+But just to be sure, I should double check.
+--- Chunk 404 ---
+Hydrogen bonds typically occur between molecules,
+not within the same molecule, and they involve a hydrogen atom being attracted to a highly
+electronegative atom like oxygen.
+--- Chunk 405 ---
+Arrow c is indeed showing this intermolecular interaction
+between an H of one molecule and O of another molecule.
+</think>
+The image shows four arrows labeled a, b, c, and d.
+--- Chunk 406 ---
+Arrow c points to a bond between a
+hydrogen atom in one water molecule and an oxygen atom in another water molecule.
+--- Chunk 407 ---
+This is
+characteristic of a hydrogen bond, which occurs between different molecules, not within the
+same molecule.
+--- Chunk 408 ---
+Final Answer: c
+Figure 15: A chemistry multimodal problem and its solution generated by Magistral Medium.
+22
+--- Chunk 409 ---
+Problem:
+What is leading to the crinkling of this leaf’s veins?
+--- Chunk 410 ---
+I don’t know and I don’t want to guess
+C.
+--- Chunk 411 ---
+Oomycete (watermould) pathogen
+E.
+--- Chunk 412 ---
+Physiological condition; no pathogen involved
+Model Generation:
+<think> The image shows a close-up of a leaf with some crinkling and discoloration along the veins.
+--- Chunk 413 ---
+To determine the cause of the crinkling, we need to consider the different possibilities given in
+the options.
+--- Chunk 414 ---
+Firstly, let’s rule out some options:
+Bacterial pathogens (Option A) usually cause symptoms
+such as water-soaked lesions, wilting, and bacterial ooze, not typically the crinkling seen here.
+--- Chunk 415 ---
+Fungal pathogens (Option C) often cause spots, mildews, or powdery substances on leaves, which
+doesn’t match the appearance here.
+--- Chunk 416 ---
+Oomycete (watermould) pathogens (Option D) often lead to
+water-soaked lesions and a more generalized blight rather than vein-specific crinkling.
+--- Chunk 417 ---
+Now, let’s consider the remaining options:
+Option B ("I don’t know and I don’t want to guess")
+is not a valid answer as we are tasked to determine the cause of the crinkling.
+--- Chunk 418 ---
+Option E
+(physiological condition) could be a possibility as it involves conditions like nutrient
+deficiencies or environmental stress that can lead to crinkling without pathogen involvement.
+--- Chunk 419 ---
+The appearance of the leaf shows crinkling and some discoloration along the veins, which can
+often be attributed to physiological conditions.
+--- Chunk 420 ---
+These might include nutrient deficiencies, water
+stress, or other environmental factors that do not involve pathogens.
+--- Chunk 421 ---
+Given the visual clues and the typical symptoms associated with different causes, the most likely
+cause of the crinkling in this leaf’s veins is a physiological condition rather than a pathogen.
+</think>
+Summary: The image shows a leaf with crinkled veins and some discoloration.
+--- Chunk 422 ---
+After
+considering the typical symptoms associated with various causes, it’s most likely that the
+crinkling is due to a physiological condition rather than a bacterial, fungal, or oomycete
+pathogen.
+--- Chunk 423 ---
+Therefore, the correct answer is:
+Final Answer: E
+Figure 16: A biology multimodal problem and its solution generated by Magistral Medium.
+23

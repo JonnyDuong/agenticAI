@@ -1,0 +1,41 @@
+4.1
+Math
+
+Format filtering.
+We started with a large but noisy problem set of around 700k samples. We
+first perform comprehensive pre-processing and filtering of the data to ensure all the problems
+are complete and that the final answers were accurate and verifiable with a rule-based system.
+Particularly, we filter proof-based and multi-part problems for which it is difficult to verify
+correctness. Furthermore, we reformulate multiple-choice problems into statement-based problems
+for more robust verification and increased difficulty.
+
+Difficulty filtering.
+We implemented a two-stage filtering pipeline to curate a dataset of problems
+at a ‘goldilocks’ difficulty level, neither too easy nor too hard for the model to learn from. First, we
+performed an initial difficulty assessment using Mistral Large 2 [MistralAI, 2024], by sampling 16
+solutions for each problem and removing the ones that are either never solved or solved with a high
+success rate. This initial, curated set of problems was then used to train a 24B model via our online
+RL pipeline, resulting in a small but capable checkpoint which we use solely for grading.
+
+In the second stage, this stronger, RL-trained model was used to re-grade the entire original dataset.
+We again sampled 16 responses for each problem, filtering out the easiest and the still-unsolved
+problems. We then further filter out potentially incorrect problems where a majority of samples have
+the same final answer but disagree with the “ground-truth” answer. This is because when the model
+consistently reaches a consensus that contradicts the reference solution, the problems themselves are
+more likely to have wrong ground-truth answers.
+
+This two-stage methodology was crucial because a single pass with the initial, weaker Mistral Large 2
+model would have been insufficient. Its reasoning capabilities would likely have caused it to discard
+many genuinely difficult problems by incorrectly classifying them as unsolvable. By using a stronger,
+RL-trained model for a second pass, we ensured that these valuable and challenging training examples
+were accurately assessed and retained.
+
+Table 1: Number of math training samples after different filtering stages.
+
+Initial data
+w/ Format filtering
+w/ Difficulty filtering
+
+699k
+501k
+38k

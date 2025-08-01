@@ -1,0 +1,29 @@
+6.4
+Advantage normalization
+
+We experimented with the following advantage normalization methods:
+
+• Minibatch - normalize advantages within a minibatch
+• Group normalization - normalize advantages within a group over a single prompt
+• No normalization - do not normalize advantages
+
+Previous works [Liu et al., 2025, Andrychowicz et al., 2020] have noted that normalization over a
+group of generations for a given question can lead to a bias where easy questions or hard questions are
+
+11
+
+
+--- Page 12 ---
+Figure 6: Impact of batch and minibatch sizes on RL training rewards. (a) Reward during RL training
+of 3B model on math data for different batch sizes, while keeping minibatch size equal to batch size. Number
+of concurrently generated sequences is kept constant at 4096. (b) Reward during RL training in the same setup
+for different minibatch sizes at fixed batch size of 8192 sequences. We observe that performance doesn’t depend
+strongly on batch size, but degrades when there are more than 2 minibatches in a batch.
+
+upweighted due to their lower standard deviation values. However, we did not observe any significant
+effects on evaluation performance or the growth of the length as shown in Figure 7. Hence, we
+decided to use minibatch normalization for all our experiments.
+
+Figure 7: Results for training with different advantage normalizations in GRPO. We observe that different
+normalization methods do not lead to significant difference either in evaluation performance or the length
+growth during training.

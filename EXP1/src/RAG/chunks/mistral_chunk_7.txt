@@ -1,0 +1,23 @@
+2.2.1
+Formatting
+
+For both math and code problems, we instruct the model to follow a specific format, which facilitates
+the extraction of the model’s answer:
+
+1. Tag requirements: (i) The model response must start with a <think> tag and must include
+a corresponding </think> tag. (ii) There should be exactly one set of these tags present in
+the response.
+
+2. Mathematical responses: For mathematical outputs, the response must include the final
+answer enclosed in \boxed{} within the answer section, following the </think> tag.
+
+3. Code responses: For code outputs, the response must include at least one markdown block,
+formatted with triple backticks followed by the programming language specification, in the
+answer section.
+
+3
+
+
+--- Page 4 ---
+Failure to meet any of these conditions results in a reward of 0, and the response will not be graded
+further. Otherwise, the response gets a reward of 0.1 and proceeds to grading.

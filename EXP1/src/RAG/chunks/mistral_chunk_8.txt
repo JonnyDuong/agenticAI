@@ -1,0 +1,20 @@
+2.2.2
+Correctness
+
+If the generated answer follows the required formatting, we extract the model solution and use a
+verifier to assess its correctness.
+
+Math correctness. The final answer is extracted from inside the last \boxed{} in the solution and
+compared against the reference answer using a rule-based verifier. It normalizes both the ground-truth
+and the generated answer to correctly reward semantically identical responses with different syntaxes.
+We leverage a combination of different parsers and SymPy2 to evaluate outputs and compare them
+to the original ground truth. An additional reward of 0.9 is given if the answer is correct, making
+the total reward 1.0.
+
+Code correctness. Code is extracted from the first markdown code block in the answer section. If the
+code is written in C++, it is compiled with a timeout of 10 seconds, using the C++20 standard. We
+pre-compile the bits/stdc++.h standard library header, which is commonly used in competitive
+programming, to speed up the compilation process. We randomly select 20 tests from the available
+test cases, ensuring that the same tests are used within a given response group. The code is then
+executed against these tests, with each test having a timeout of 4 seconds and a memory limit of 300
+MB. An additional reward of 0.9 is given if the code successfully passes all the tests.

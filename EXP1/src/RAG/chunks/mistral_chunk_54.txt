@@ -1,0 +1,342 @@
+References
+
+Marcin Andrychowicz, Anton Raichuk, Piotr Sta´nczyk, Manu Orsini, Sertan Girgin, Raphael Marinier,
+Léonard Hussenot, Matthieu Geist, Olivier Pietquin, Marcin Michalski, Sylvain Gelly, and Olivier
+Bachem. What matters in on-policy reinforcement learning? a large-scale empirical study, 2020.
+URL https://arxiv.org/abs/2006.05990.
+
+DeepSeek-AI, Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song, Ruoyu Zhang, Runxin Xu,
+Qihao Zhu, Shirong Ma, Peiyi Wang, Xiao Bi, Xiaokang Zhang, Xingkai Yu, Yu Wu, Z. F. Wu,
+Zhibin Gou, Zhihong Shao, Zhuoshu Li, Ziyi Gao, Aixin Liu, Bing Xue, Bingxuan Wang, Bochao
+Wu, Bei Feng, Chengda Lu, Chenggang Zhao, Chengqi Deng, Chenyu Zhang, Chong Ruan,
+Damai Dai, Deli Chen, Dongjie Ji, Erhang Li, Fangyun Lin, Fucong Dai, Fuli Luo, Guangbo Hao,
+Guanting Chen, Guowei Li, H. Zhang, Han Bao, Hanwei Xu, Haocheng Wang, Honghui Ding,
+Huajian Xin, Huazuo Gao, Hui Qu, Hui Li, Jianzhong Guo, Jiashi Li, Jiawei Wang, Jingchang
+Chen, Jingyang Yuan, Junjie Qiu, Junlong Li, J. L. Cai, Jiaqi Ni, Jian Liang, Jin Chen, Kai Dong,
+Kai Hu, Kaige Gao, Kang Guan, Kexin Huang, Kuai Yu, Lean Wang, Lecong Zhang, Liang Zhao,
+Litong Wang, Liyue Zhang, Lei Xu, Leyi Xia, Mingchuan Zhang, Minghua Zhang, Minghui Tang,
+Meng Li, Miaojun Wang, Mingming Li, Ning Tian, Panpan Huang, Peng Zhang, Qiancheng Wang,
+Qinyu Chen, Qiushi Du, Ruiqi Ge, Ruisong Zhang, Ruizhe Pan, Runji Wang, R. J. Chen, R. L.
+Jin, Ruyi Chen, Shanghao Lu, Shangyan Zhou, Shanhuang Chen, Shengfeng Ye, Shiyu Wang,
+Shuiping Yu, Shunfeng Zhou, Shuting Pan, S. S. Li, Shuang Zhou, Shaoqing Wu, Shengfeng
+Ye, Tao Yun, Tian Pei, Tianyu Sun, T. Wang, Wangding Zeng, Wanjia Zhao, Wen Liu, Wenfeng
+Liang, Wenjun Gao, Wenqin Yu, Wentao Zhang, W. L. Xiao, Wei An, Xiaodong Liu, Xiaohan
+Wang, Xiaokang Chen, Xiaotao Nie, Xin Cheng, Xin Liu, Xin Xie, Xingchao Liu, Xinyu Yang,
+Xinyuan Li, Xuecheng Su, Xuheng Lin, X. Q. Li, Xiangyue Jin, Xiaojin Shen, Xiaosha Chen,
+Xiaowen Sun, Xiaoxiang Wang, Xinnan Song, Xinyi Zhou, Xianzu Wang, Xinxia Shan, Y. K. Li,
+Y. Q. Wang, Y. X. Wei, Yang Zhang, Yanhong Xu, Yao Li, Yao Zhao, Yaofeng Sun, Yaohui Wang,
+Yi Yu, Yichao Zhang, Yifan Shi, Yiliang Xiong, Ying He, Yishi Piao, Yisong Wang, Yixuan Tan,
+Yiyang Ma, Yiyuan Liu, Yongqiang Guo, Yuan Ou, Yuduan Wang, Yue Gong, Yuheng Zou, Yujia
+He, Yunfan Xiong, Yuxiang Luo, Yuxiang You, Yuxuan Liu, Yuyang Zhou, Y. X. Zhu, Yanhong
+Xu, Yanping Huang, Yaohui Li, Yi Zheng, Yuchen Zhu, Yunxian Ma, Ying Tang, Yukun Zha,
+Yuting Yan, Z. Z. Ren, Zehui Ren, Zhangli Sha, Zhe Fu, Zhean Xu, Zhenda Xie, Zhengyan Zhang,
+Zhewen Hao, Zhicheng Ma, Zhigang Yan, Zhiyu Wu, Zihui Gu, Zijia Zhu, Zijun Liu, Zilin Li,
+Ziwei Xie, Ziyang Song, Zizheng Pan, Zhen Huang, Zhipeng Xu, Zhongyu Zhang, and Zhen
+Zhang. Deepseek-r1: Incentivizing reasoning capability in llms via reinforcement learning, 2025.
+URL https://arxiv.org/abs/2501.12948.
+
+Lasse Espeholt, Hubert Soyer, Remi Munos, Karen Simonyan, Vlad Mnih, Tom Ward, Yotam Doron,
+Vlad Firoiu, Tim Harley, Iain Dunning, et al. Impala: Scalable distributed deep-rl with importance
+weighted actor-learner architectures. In International conference on machine learning, pages
+1407–1416. PMLR, 2018.
+
+Paul Gauthier. Polyglot Benchmark. https://github.com/Aider-AI/polyglot-benchmark,
+2024. URL https://github.com/Aider-AI/polyglot-benchmark. GitHub repository. Cod-
+ing problems sourced from Exercism language tracks.
+
+Etash Guha, Ryan Marten, Sedrick Keh, Negin Raoof, Georgios Smyrnis, Hritik Bansal, Marianna
+Nezhurina, Jean Mercat, Trung Vu, Zayne Sprague, Ashima Suvarna, Benjamin Feuer, Liangyu
+Chen, Zaid Khan, Eric Frankel, Sachin Grover, Caroline Choi, Niklas Muennighoff, Shiye Su,
+Wanjia Zhao, John Yang, Shreyas Pimpalgaonkar, Kartik Sharma, Charlie Cheng-Jie Ji, Yichuan
+Deng, Sarah Pratt, Vivek Ramanujan, Jon Saad-Falcon, Jeffrey Li, Achal Dave, Alon Albalak,
+Kushal Arora, Blake Wulfe, Chinmay Hegde, Greg Durrett, Sewoong Oh, Mohit Bansal, Saadia
+Gabriel, Aditya Grover, Kai-Wei Chang, Vaishaal Shankar, Aaron Gokaslan, Mike A. Merrill,
+Tatsunori Hashimoto, Yejin Choi, Jenia Jitsev, Reinhard Heckel, Maheswaran Sathiamoorthy,
+Alexandros G. Dimakis, and Ludwig Schmidt. Openthoughts: Data recipes for reasoning models,
+2025. URL https://arxiv.org/abs/2506.04178.
+
+Dan Hendrycks, Collin Burns, Saurav Kadavath, Akul Arora, Steven Basart, Eric Tang, Dawn Song,
+and Jacob Steinhardt. Measuring mathematical problem solving with the math dataset. arXiv
+preprint arXiv:2103.03874, 2021.
+
+18
+
+
+--- Page 19 ---
+Jian Hu, Xibin Wu, Zilin Zhu, Weixun Wang, Dehao Zhang, Yu Cao, et al. Openrlhf: An easy-to-use,
+scalable and high-performance rlhf framework. arXiv preprint arXiv:2405.11143, 2024.
+
+Jingcheng Hu, Yinmin Zhang, Qi Han, Daxin Jiang, Xiangyu Zhang, and Heung-Yeung Shum.
+Open-reasoner-zero: An open source approach to scaling up reinforcement learning on the base
+model, 2025. URL https://arxiv.org/abs/2503.24290.
+
+Hugging Face. Open r1: A fully open reproduction of deepseek-r1, January 2025. URL https:
+//github.com/huggingface/open-r1.
+
+Aaron Jaech, Adam Kalai, Adam Lerer, Adam Richardson, Ahmed El-Kishky, Aiden Low, Alec
+Helyar, Aleksander Madry, Alex Beutel, Alex Carney, et al. Openai o1 system card. arXiv preprint
+arXiv:2412.16720, 2024.
+
+Naman Jain, King Han, Alex Gu, Wen-Ding Li, Fanjia Yan, Tianjun Zhang, Sida Wang, Armando
+Solar-Lezama, Koushik Sen, and Ion Stoica. Livecodebench: Holistic and contamination free
+evaluation of large language models for code. arXiv preprint arXiv:2403.07974, 2024.
+
+Armand Joulin, Edouard Grave, Piotr Bojanowski, Matthijs Douze, Hérve Jégou, and Tomas Mikolov.
+Fasttext.zip: Compressing text classification models. arXiv preprint arXiv:1612.03651, 2016.
+
+Hao Li, Zheng Xu, Gavin Taylor, Christoph Studer, and Tom Goldstein. Visualizing the loss landscape
+of neural nets, 2018. URL https://arxiv.org/abs/1712.09913.
+
+Zichen Liu, Changyu Chen, Wenjun Li, Penghui Qi, Tianyu Pang, Chao Du, Wee Sun Lee, and Min
+Lin. Understanding r1-zero-like training: A critical perspective. arXiv preprint arXiv:2503.20783,
+2025.
+
+Pan Lu, Hritik Bansal, Tony Xia, Jiacheng Liu, Chunyuan Li, Hannaneh Hajishirzi, Hao Cheng,
+Kai-Wei Chang, Michel Galley, and Jianfeng Gao. Mathvista: Evaluating mathematical reasoning
+of foundation models in visual contexts. In International Conference on Learning Representations
+(ICLR), 2024.
+
+MistralAI. Mistral large 2. https://mistral.ai/news/mistral-large-2407, 2024.
+
+MistralAI. Mistral medium 3. https://mistral.ai/fr/news/mistral-medium-3, 2025.
+
+Michael Noukhovitch, Shengyi Huang, Sophie Xhonneux, Arian Hosseini, Rishabh Agarwal, and
+Aaron Courville. Asynchronous rlhf: Faster and more efficient off-policy rl for language models.
+arXiv preprint arXiv:2410.18252, 2024.
+
+Guilherme Penedo, Anton Lozhkov, Hynek Kydlíˇcek, Loubna Ben Allal, Edward Beeching,
+Agustín Piqueres Lajarín, Quentin Gallouédec, Nathan Habib, Lewis Tunstall, and Leandro von
+Werra. Codeforces cots. https://huggingface.co/datasets/open-r1/codeforces-cots,
+2025.
+
+Long Phan, Alice Gatti, Ziwen Han, Nathaniel Li, Josephina Hu, Hugh Zhang, Chen Bo Calvin
+Zhang, Mohamed Shaaban, John Ling, Sean Shi, et al. Humanity’s last exam. arXiv preprint
+arXiv:2501.14249, 2025.
+
+David Rein, Betty Li Hou, Asa Cooper Stickland, Jackson Petty, Richard Yuanzhe Pang, Julien Dirani,
+Julian Michael, and Samuel R Bowman. Gpqa: A graduate-level google-proof q&a benchmark. In
+First Conference on Language Modeling, 2024.
+
+Youcef Saad. Iterative methods for sparse linear systems. SIAM, 2003.
+
+John Schulman, Filip Wolski, Prafulla Dhariwal, Alec Radford, and Oleg Klimov. Proximal policy
+optimization algorithms. arXiv preprint arXiv:1707.06347, 2017.
+
+Zhihong Shao, Peiyi Wang, Qihao Zhu, Runxin Xu, Junxiao Song, Xiao Bi, Haowei Zhang,
+Mingchuan Zhang, Y. K. Li, Y. Wu, and Daya Guo. Deepseekmath: Pushing the limits of mathemat-
+ical reasoning in open language models, 2024. URL https://arxiv.org/abs/2402.03300.
+
+19
+
+
+--- Page 20 ---
+Guangming Sheng, Chi Zhang, Zilingfeng Ye, Xibin Wu, Wang Zhang, Ru Zhang, Yanghua Peng,
+Haibin Lin, and Chuan Wu. Hybridflow: A flexible and efficient rlhf framework. arXiv preprint
+arXiv:2409.19256, 2024.
+
+Shenzhi Wang, Le Yu, Chang Gao, Chujie Zheng, Shixuan Liu, Rui Lu, Kai Dang, Xionghui Chen,
+Jianxin Yang, Zhenru Zhang, et al. Beyond the 80/20 rule: High-entropy minority tokens drive
+effective reinforcement learning for llm reasoning. arXiv preprint arXiv:2506.01939, 2025.
+
+Bo Wu, Sid Wang, Yunhao Tang, Jia Ding, Eryk Helenowski, Liang Tan, Tengyu Xu, Tushar Gowda,
+Zhengxing Chen, Chen Zhu, et al. Llamarl: A distributed asynchronous reinforcement learning
+framework for efficient large-scale llm trainin. arXiv preprint arXiv:2505.24034, 2025.
+
+Qiying Yu, Zheng Zhang, Ruofei Zhu, Yufeng Yuan, Xiaochen Zuo, Yu Yue, Tiantian Fan, Gaohong
+Liu, Lingjun Liu, Xin Liu, et al. Dapo: An open-source llm reinforcement learning system at scale.
+arXiv preprint arXiv:2503.14476, 2025.
+
+Xiang Yue, Yuansheng Ni, Kai Zhang, Tianyu Zheng, Ruoqi Liu, Ge Zhang, Samuel Stevens, Dongfu
+Jiang, Weiming Ren, Yuxuan Sun, Cong Wei, Botao Yu, Ruibin Yuan, Renliang Sun, Ming Yin,
+Boyuan Zheng, Zhenzhu Yang, Yibo Liu, Wenhao Huang, Huan Sun, Yu Su, and Wenhu Chen.
+Mmmu: A massive multi-discipline multimodal understanding and reasoning benchmark for expert
+agi. In Proceedings of CVPR, 2024.
+
+Xiang Yue, Tianyu Zheng, Yuansheng Ni, Yubo Wang, Kai Zhang, Shengbang Tong, Yuxuan Sun,
+Botao Yu, Ge Zhang, Huan Sun, Yu Su, Wenhu Chen, and Graham Neubig. Mmmu-pro: A more
+robust multi-discipline multimodal understanding benchmark. In Proceedings of ACL, 2025.
+
+Jeffrey Zhou, Tianjian Lu, Swaroop Mishra, Siddhartha Brahma, Sujoy Basu, Yi Luan, Denny
+Zhou, and Le Hou. Instruction-following evaluation for large language models, 2023. URL
+https://arxiv.org/abs/2311.07911.
+
+20
+
+
+--- Page 21 ---
+Problem:
+
+A beam of light passes from medium 1 to medium 2 to medium 3 as shown in the diagram.
+What may be concluded about the speed of light in each medium?
+A. v3 > v1 > v2
+B. v1 > v2 > v3
+C. v1 > v3 < v2
+D. v2 > v3 > v1
+
+Model Generation:
+
+<think> First, I need to understand the behavior of light as it passes through different mediums.
+According to Snell’s Law, the speed of light changes when it enters a medium with a different
+refractive index.
+The refractive index (n) of a medium is inversely related to the speed of light
+(v) in that medium, meaning that as the refractive index increases, the speed of light decreases.
+
+Looking at the diagram:
+The light beam starts from medium 1 to medium 2, bending towards the
+normal line.
+This indicates that medium 2 has a higher refractive index than medium 1 because
+light bends towards the normal when it slows down (entering a denser medium).
+The light beam that
+passes from medium 2 to medium 3, bending away from the normal line.
+This indicates that medium 3
+has a lower refractive index than medium 2 because light bends away from the normal when it speeds
+up (entering a less dense medium).
+
+Now, let’s analyze the speed of light in each medium:
+In medium 1, the speed of light is v1.
+In
+medium 2, since the light bends towards the normal when entering from medium 1, medium 2 has a
+higher refractive index than medium 1.
+Therefore, the speed of light in medium 2 is v2, is less
+than in medium 1, so v1
+>
+v2.
+In medium 3, since the light bends away from the normal when
+entering from medium 2, medium 3 has a lower refractive index than medium 2.
+Therefore, the speed
+of light in medium 3, v3, is greater than in medium 2, so v3 > v2.
+
+Now, we need to compare the speeds v1, v2, and v3.
+From the above analysis, v1
+>
+v2 v3
+>
+v2
+But we also need to determine the relationship between v1 and v3.
+Since medium 3 has a lower
+refractive index than medium 1(because light bends away from the normal when transitioning from
+medium 2 to medium 3, and we already know medium 2 has a higher refractive index than medium 1),
+it implies that medium 3 is less dense than medium 1.
+Therefore, the speed of light in medium 3
+will be greater than in medium 1.
+
+So, in sum:
+v3 > v1 > v2
+
+Looking at the options provided:
+A. v3 > v1 > v2 B. v1 > v2 > v3 C. v1 > v3 < v2 D. v2 >
+v3 > v1 The correct option that matches our conclusion is A.
+
+</think>
+
+Final Answer: A
+
+Figure 14: A physics multimodal problem and its solution generated by Magistral Medium.
+
+21
+
+
+--- Page 22 ---
+Problem:
+Which arrow points to a hydrogen bond?
+
+Model Generation:
+
+<think> Alright, I have this image showing a molecular structure with arrows labeled a, b, c, and
+d.
+The question is asking which arrow points to a hydrogen bond.
+Let’s break this down.
+
+First, I need to understand what a hydrogen bond is.
+A hydrogen bond is a type of attractive
+interaction between a hydrogen atom and an electronegative atom like oxygen, nitrogen, or fluorine.
+In this case, since we have water molecules (H2O), the hydrogen bonds would be between the
+hydrogen atoms and the oxygen atoms of different water molecules.
+
+Looking at the image:
+
+• Arrow a points to a bond between a hydrogen atom and an oxygen atom within the same water
+molecule.
+That’s a covalent bond, not a hydrogen bond.
+• Arrow b points to another bond within a single water molecule, which is again a covalent bond.
+• Arrow c points to a bond between a hydrogen atom of one water molecule and an oxygen atom of
+another water molecule.
+This looks like a hydrogen bond because it’s between different water
+molecules.
+• Arrow d points to a bond between hydrogen and oxygen within a single water molecule, so that’s
+another covalent bond.
+
+From this, it seems that arrow c is pointing to the hydrogen bond between the hydrogen of one
+water molecule and the oxygen of another water molecule.
+
+But just to be sure, I should double check.
+Hydrogen bonds typically occur between molecules,
+not within the same molecule, and they involve a hydrogen atom being attracted to a highly
+electronegative atom like oxygen.
+Arrow c is indeed showing this intermolecular interaction
+between an H of one molecule and O of another molecule.
+
+</think>
+
+The image shows four arrows labeled a, b, c, and d. Arrow c points to a bond between a
+hydrogen atom in one water molecule and an oxygen atom in another water molecule. This is
+characteristic of a hydrogen bond, which occurs between different molecules, not within the
+same molecule.
+
+Final Answer: c
+
+Figure 15: A chemistry multimodal problem and its solution generated by Magistral Medium.
+
+22
+
+
+--- Page 23 ---
+Problem:
+What is leading to the crinkling of this leaf’s veins?
+A. Bacterial pathogen
+B. I don’t know and I don’t want to guess
+C. Fungal pathogen
+D. Oomycete (watermould) pathogen
+E. Physiological condition; no pathogen involved
+
+Model Generation:
+
+<think> The image shows a close-up of a leaf with some crinkling and discoloration along the veins.
+To determine the cause of the crinkling, we need to consider the different possibilities given in
+the options.
+
+Firstly, let’s rule out some options:
+Bacterial pathogens (Option A) usually cause symptoms
+such as water-soaked lesions, wilting, and bacterial ooze, not typically the crinkling seen here.
+Fungal pathogens (Option C) often cause spots, mildews, or powdery substances on leaves, which
+doesn’t match the appearance here.
+Oomycete (watermould) pathogens (Option D) often lead to
+water-soaked lesions and a more generalized blight rather than vein-specific crinkling.
+
+Now, let’s consider the remaining options:
+Option B ("I don’t know and I don’t want to guess")
+is not a valid answer as we are tasked to determine the cause of the crinkling.
+Option E
+(physiological condition) could be a possibility as it involves conditions like nutrient
+deficiencies or environmental stress that can lead to crinkling without pathogen involvement.
+
+The appearance of the leaf shows crinkling and some discoloration along the veins, which can
+often be attributed to physiological conditions.
+These might include nutrient deficiencies, water
+stress, or other environmental factors that do not involve pathogens.
+
+Given the visual clues and the typical symptoms associated with different causes, the most likely
+cause of the crinkling in this leaf’s veins is a physiological condition rather than a pathogen.
+
+</think>
+
+Summary: The image shows a leaf with crinkled veins and some discoloration. After
+considering the typical symptoms associated with various causes, it’s most likely that the
+crinkling is due to a physiological condition rather than a bacterial, fungal, or oomycete
+pathogen. Therefore, the correct answer is:
+
+Final Answer: E
+
+Figure 16: A biology multimodal problem and its solution generated by Magistral Medium.
+
+23

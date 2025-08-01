@@ -1,0 +1,6 @@
+2.2
+Reward shaping
+
+Choosing the appropriate reward is crucial for the RL algorithm to work effectively. During training,
+model generations are evaluated along four axes: formatting, correctness, length, and language
+consistency, which we describe below.

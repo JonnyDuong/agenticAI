@@ -1,0 +1,25 @@
+2.2.3
+Length penalty
+
+Following [Yu et al., 2025], we use soft length penalty to signal the model that the hard cutoff on
+maximal completion length is near. We fix two lengths lmax and lcache and compute length penalty as
+
+
+
+
+
+0,
+|y| ≤lmax −lcache
+−0.1 · |y|−lmax+lcache
+
+Rlength(y) =
+
+lcache
+,
+lmax −lcache < |y| ≤lmax,
+−0.1,
+lmax < |y|
+(1)
+
+
+

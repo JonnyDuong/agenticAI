@@ -1,0 +1,72 @@
+5
+Experiment and results
+
+In this section we present the Magistral models. Our goal is to answer two questions: (i) how far can
+one get with pure reinforcement learning on a large base model? (ii) given a strong teacher model,
+how can one achieve the strongest possible lightweight model? To this end, we trained Magistral
+Medium, on top of Mistral Medium 3 [MistralAI, 2025] with pure RL; and Magistral Small, which
+began with SFT traces derived from Magistral Medium.
+
+7
+
+
+--- Page 8 ---
+RL
+RL
+RL
+RL
+RL
+RL
+
+Magistral 
+
+Mistral 
+Medium 3
+
+Format filtering
+Math
+
+Medium
+
+Performance  
+
+Length 
+plateaus
+
+. . .
+Difficulty filtering
+
+Magistral Medium traces
+
+plateaus
+
+Magistral 
+
+Small
+Mistral 
+Small 3
+SFT
+RL
+
+Increase  
+completion length
+
+More challenging  
+
+RL
+RL
+
+Test cases  
+success filtering
+
+data
+
+Code
+
+Data Filtering
+Training overview
+RL stages
+
+Figure 4: Overview of the filtering, training and RL stages discussed in the paper. We do RL over
+Mistral Medium 3 to get Magistral Medium. We use this model to generate answers for a large set of diverse
+prompts. We use these generated traces to finetune Mistral Small 3 and then perform RL to get Magistral Small.

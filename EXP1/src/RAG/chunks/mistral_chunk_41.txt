@@ -1,0 +1,23 @@
+6.3
+Batch and minibatch size
+
+Reinforcement learning (RL) algorithms like PPO or GRPO introduce two distinct batch scales.
+The batch size, denoted as nbatch, refers to the number of sequences collected before updating the
+generator’s weights. The minibatch size, nminibatch, indicates the number of sequences used to compute
+the gradient and perform a single optimization step. It is important to note that nminibatch must divide
+nbatch. Additionally, in an asynchronous RL pipeline, a third scale is introduced: the number of
+concurrent sequences, nasync, which represents the number of sequences being generated in parallel.
+If the number of concurrently generated sequences nasync is much larger than the batch size nbatch, a
+typical sequence was generated with nasync/nbatch different policies and could be too off-policy. The
+effect becomes worse as we do more than one minibatch update per one batch.
+
+To test this hypothesis we prepared a strong 3B model using SFT starting from Ministral 3B, and
+then trained it using GRPO on math-only data with a constant learning rate, a fixed nasync = 4096,
+and different values of nbatch and nminibatch in {1024, 2048, 4096, 8192}.
+
+We observe that as long as we keep nbatch = nminibatch and that nbatch is large enough, the performance
+is very similar when plotted depending on the number of processed prompts, as can be seen in
+Figure 6 (a). On the other hand, when nminibatch is decreased while keeping nbatch constant, the
+performance suddenly degrades, even when compared to nbatch reduced to the same nminibatch, as
+highlighted in Figure 6 (b). When nbatch ≤1024, the training becomes less stable, so we opt to keep
+ratio nasync/nbatch ≤2 and nbatch = nminibatch during final training and further ablations.

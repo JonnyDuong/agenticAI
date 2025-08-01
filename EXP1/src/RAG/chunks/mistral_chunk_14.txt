@@ -1,0 +1,11 @@
+4
+Data curation
+
+We limit ourselves to problems with verifiable solutions; we use mathematical problems whose
+solution is a numerical answer or expression, and code problems with associated tests. We apply
+extensive filtering, which we describe here.
+
+6
+
+
+--- Page 7 ---

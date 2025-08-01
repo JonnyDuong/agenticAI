@@ -1,0 +1,27 @@
+5.2
+Magistral Medium – reasoning RL from scratch
+
+Here our goal is to evaluate the quality of our RL stack by training a model without any ‘cold
+start’ (i.e priming for reasoning by distillation of reasoning traces). We used Mistral Medium 3
+Instruct [MistralAI, 2025] as the starting checkpoint for this run. Training was done in multiple stages
+with distinct hyper-parameters. Particularly, the stages were designed to ensure the following criteria
+were always satisfied:
+
+1. Dataset is not too easy. As the model performance increases, we increase the difficulty of
+the data. Harder data splits are constructed by including more complicated data (which were
+filtered out in earlier stages) or removing completely solved problems from the data.
+
+2. Generation length does not stop growing. To prevent stagnation in generation length,
+we increase both maximal allowed completion length and maximal completion length
+lmax −lcache not punished by length penalty (c.f. Section 2.2.3). We increased lmax −lcache
+twice as 16k →24k and 24k →32k.
+
+3. KV-cache memory burden is not too large. As generation length increases, the memory
+usage associated with the KV cache increases. To address this, we scale down the total
+number of concurrent requests running nasync, the batch size nbatch, and the minibatch size
+nminibatch. The impact of batch size is discussed in Section 6.3. During training we decreased
+batch size twice as 8k →4k and 4k →2k.
+
+Table 2 shows the results of Magistral Medium trained with pure RL, compared against analogous
+experiments from [DeepSeek-AI et al., 2025]. We find our RL pipeline alone yields a nearly 50%
+accuracy increase in AIME ’24 (pass@1), and 30% on LiveCodeBench (v5).

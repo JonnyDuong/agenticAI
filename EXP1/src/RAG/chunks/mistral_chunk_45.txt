@@ -1,0 +1,24 @@
+7.2
+Eating the multimodal free lunch
+
+The initial checkpoints utilized for RL training, Mistral Small 3 and Mistral Medium 3, are multimodal
+models and come with associated vision encoders. During the RL training phase, as the models are
+
+13
+
+
+--- Page 14 ---
+Figure 10: Performance on multimodal benchmarks.
+
+trained on text-only data, one might expect the multimodal performance to degrade. However, on the
+contrary, we discover that the models not only retain their multimodal capabilities, but unexpectedly
+develop enhanced multimodal reasoning abilities. The resulting models also showcase improved
+performance on multimodal benchmarks.
+
+We report results multimodal benchmarks designed to assess reasoning capabilities, specifically
+MathVista [Lu et al., 2024], MMMU [Yue et al., 2024], and MMMU-Pro [Yue et al., 2025]. Our results
+in Figure 10 show no performance regression across most benchmarks, with notable improvements
+observed on MMMU (+5%, reaching 70%), MMMU-Pro-Standard (+4.4%, reaching 57.9%) and
+MMMU-Pro-Vision (+12%, reaching 52.1%). While the most significant improvements are seen in
+scientific questions that require textual reasoning, we observe that the model transfers its extended
+thinking process across all types of questions (see Figures 14 15 16 for qualitative examples).

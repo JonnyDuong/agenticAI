@@ -1,0 +1,54 @@
+2.2.4
+Language consistency reward
+
+A core design principle for Magistral is for it to reason in the same language as the user. Reinforcement
+learning on math and coding problems without any treatment often results in mixed-language model
+responses. In preliminary experiments without language constraints, we frequently observed outputs
+that mixed English, Chinese, and Russian words. While these outputs were coherent, they were
+undesirable from a user perspective.
+
+To prevent language switching, we translated 10% of our problems written in English to the following
+languages: French, Spanish, Italian, German, Chinese, and Russian. When calculating the reward
+for a conversation—a triple of (problem, thoughts, answer)—we first normalized each of the three
+components by removing LaTeX content and code blocks, and then applied a fastText classifier [Joulin
+et al., 2016] to each. If the classifier indicates that all three parts used the same language, we give an
+additional reward of 0.1.
+
+These simple modifications are sufficient to enable the model to closely follow the language of the
+user, with minimal code-switching, while maintaining performance on reasoning tasks. Although we
+only translated the original English problems into a few languages, we observed that the model could
+successfully generate chains of thought in arbitrary languages.
+
+System prompt. We specify the format and the language requirements in the system prompt, which
+can be found in Figure 2. We find that RL training is quite sensitive to the system prompt we use.
+For example, the Be as casual and as long as you want part of the system prompt increases the
+entropy of the model and therefore improves the exploration of the model.
+
+4
+
+
+--- Page 5 ---
+Magistral’s system prompt
+
+A user will ask you to solve a task. You should first draft your thinking process (inner
+monologue) until you have derived the final answer. Afterwards, write a self-contained
+summary of your thoughts (i.e. your summary should be succinct but contain all the critical
+steps you needed to reach the conclusion). You should use Markdown and Latex to format
+your response. Write both your thoughts and summary in the same language as the task
+posed by the user.
+
+Your thinking process must follow the template below:
+<think>
+Your thoughts or/and draft, like working through an exercise on scratch paper. Be as casual
+and as long as you want until you are confident to generate a correct answer.
+</think>
+
+Here, provide a concise summary that reflects your reasoning and presents a clear final
+answer to the user.
+
+Problem:
+
+{problem}
+
+Figure 2: Magistral’s system prompt. The system prompt spells out the format and language guidelines for
+the model. The same system prompt is utilized for both mathematical and coding problems.

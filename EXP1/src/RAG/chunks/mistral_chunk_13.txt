@@ -1,0 +1,57 @@
+3
+
+Sequence for step i
+
+πi+1 =  πi  + ∇ J
+
+Policy change
+
+Reward
+
+Sequence from previous batch
+
+1. Generation
+
+2. Scoring
+
+3. Batching
+
+Trainers
+
+πi
+
+Step i batch
+
+4. Weight update
+
+Figure 3: Online training pipeline. 1) Generators continuously output completions to prompts from input
+data sources. 2) Whenever a completion is finished, it is sent to the appropriate verifier. 3) Each sequence is
+sent to a different data parallel group using a pre-set permutation until every data parallel group has enough
+sequences to form a batch. 4) A single gradient step is performed and the trainer and generators are updated.
+In the generators, weights are replaced mid-generation, which means that in-flight generations continue with
+a slightly outdated key-value cache, as we do not refresh the cache. Since the model resides on GPUs in both the
+trainer and the generators, the weights are transferred using NCCL for optimal performance. The model weights
+are dynamically consolidated to accommodate the different sharding topologies between trainers and generators.
+
+As a solution is generated for a single prompt, it may experience multiple updates to the model
+weights, reflecting the latest improvements from the trainers. By the time it is fully processed and
+sent to the trainers, the model weights may have been updated several times, but the latest tokens are
+always generated on-policy. When updating the model weights, the hidden states previously stored in
+the key-value cache become slightly outdated because they were computed by previous versions of the
+model. For performance, we find that recomputing the key-value cache is not necessary, potentially
+due to off-policy corrections inherent to the loss function [Schulman et al., 2017].
+
+Trainer optimization.
+We define a batch as a fixed number of generated completions, rather than a
+fixed number of tokens. Generators send each finished completion to a random trainer rank according
+to a pre-set permutation. A gradient update is performed when each data parallel rank has received
+enough completions to make a batch. If the trainers are the bottleneck, as is the case in early training
+when the generations are still short, we accumulate incoming generations into a blocking queue
+with a fixed size limit that controls off-policy degree. A batch may be partitioned into minibatches
+to perform several optimization steps (see Section 6.3). Each minibatch has a fixed number of
+completions but a variable number of tokens, so it is further divided into microbatches of a fixed
+token size. Since we accumulate the gradient over microbatches, the order of samples does not matter.
+We take advantage of this property to implement a greedy collation algorithm, sorting the sequences
+by descending size and trying to fit them one by one into a free microbatch if there is one or starting
+a new otherwise. This ensures a homogeneous workload across training workers for each minibatch,
+reducing padding by 19%.

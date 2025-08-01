@@ -1,0 +1,10 @@
+7
+Analysis
+
+In this section, we investigate the dynamics of RL training and present evidence that increasing
+completion length is the main resource that improves the performance of the model. Those dynamics
+are not destructive to previous capabilities, and the reasoning capabilities can even generalize:
+multimodal reasoning gets improved for free, and function calling and instruction following remain
+unchanged or even get a small boost. Additionally, we discuss two ideas that didn’t work for us -
+giving more fine-grained rewards in code tasks based on test completion rate and controlling entropy
+via entropy bonus term in the loss.

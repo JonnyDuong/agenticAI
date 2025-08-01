@@ -1,0 +1,51 @@
+3
+Infrastructure
+
+In this section, we present our infrastructure for online training. We adopt a distributed RL training
+system similar to those proposed in several prior works [Espeholt et al., 2018, Hu et al., 2024,
+Noukhovitch et al., 2024, Sheng et al., 2024, Wu et al., 2025] that coordinates three kinds of workers:
+
+• Trainers maintain the main copy of the model weights and perform gradient updates.
+
+• Generators perform ‘roll-outs’, using the latest policy to return completions with log-
+probabilities from the training prompts.
+
+• Verifiers evaluate the completions produced by the generators and return a reward (see
+Section 2.2 for details).
+
+Challenges with distributed RL.
+Generators are a significant part of the total compute and the
+part that’s unique to online RL. Their workload is highly heterogeneous and hard to predict as the
+distribution of sequence lengths is highly skewed and changes over the course of training: the longest
+completions can take up to 5 times longer than the shortest. One of the main constraints of the system
+is to introduce no bias on sequence lengths: the distribution of completion lengths must be exactly
+that of the training data, even though shorter completions finish more quickly. A competing goal is
+to update the generator weights as soon as possible. We want the generations to be as on-policy as
+possible, but we also want the generators to operate without waiting for each other or the trainers.
+
+Asynchronous generations.
+In order to train without any approximation, we could process batches
+sequentially: start generators on a batch, wait for all sequences to complete, update the model weights
+for both trainers and generators, and repeat. However, this approach leads to idle generators and
+low pipeline efficiency due to heterogeneous completion times. Instead, we prioritize efficiency and
+operate the generators continuously at maximum throughput without ever waiting for the trainers.
+We constantly gather groups from the generators, verify them, and update the trainers. After these
+updates, the trainers send the new weights to the generators via NCCL, without discarding the in-flight
+sequences currently being generated. Broadcasting weights from GPUs to GPUs is crucial as it
+reduces the time required for a single update to below 5 seconds, even with large models and large
+world sizes. We illustrate this process in Figure 3.
+
+2https://www.sympy.org/en/index.html
+
+5
+
+
+--- Page 6 ---
+Verifiers
+
+2
+
+πi+1
+πi
+πi-1
+πi-2

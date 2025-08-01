@@ -1,0 +1,11 @@
+8
+RL on model finetuned using OSS reasoning traces
+
+As an experiment, we also tried to first finetune Mistral Medium 3 using open source reasoning
+datasets OpenThoughts [Guha et al., 2025] and the code subset of OpenR1 [Hugging Face, 2025,
+Penedo et al., 2025] including both the prompts and the generations from these datasets i.e. Deepseek
+R1 generated traces. This included a total of about 1.3M generations. We then run RL on top of this
+finetuned checkpoint using our most difficult subset of the data. As shown in Figure 13, applying RL
+yields substantial performance gains over the SFT checkpoint. Notably, the RL model improves by
+over 10 points on AIME’25 and 5 points on LiveCodeBench, achieving a final performance level on
+par with Deepseek-R1 on code and math benchmarks.

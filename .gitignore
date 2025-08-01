@@ -38,6 +38,33 @@ pip-delete-this-directory.txt
 
 # Unit test / coverage reports
 htmlcov/
+
+# Security: Exclude keys, secrets, and sensitive config
+.env
+*.env
+*key*
+*secret*
+*token*
+*.pem
+*.crt
+*.pfx
+*.cer
+*.der
+*.jks
+*.p12
+*.p7b
+*.p7c
+*.asc
+*.gpg
+*.pgp
+secrets.*
+config.*
+credentials.*
+private.*
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
 .tox/
 .nox/
 .coverage

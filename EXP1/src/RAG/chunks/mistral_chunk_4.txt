@@ -1,0 +1,93 @@
+2.1
+Reinforcement learning algorithm
+
+We use Group Relative Policy Optimization (GRPO) [Shao et al., 2024] as our RL algorithm. Unlike
+PPO [Schulman et al., 2017], GRPO eliminates the need for a ‘critic model’, and instead uses the aver-
+age reward from multiple generations per prompt from the policy to compute a baseline for advantage
+calculation. Specifically, GRPO optimizes the policy πθ to maximize the following objective:
+
+JGRPO(θ) = Eq∼P (Q),{oi}G
+i=1∼πθold(·|q)
+"
+G
+X
+
+
+min
+ πθ(oi,t|q, oi,<t)
+
+|oi|
+X
+
+
+
+πθold(oi,t|q, oi,<t)
+ˆAi,t, clip( πθ(oi,t|q, oi,<t)
+
+1
+|oi|
+
+πθold(oi,t|q, oi,<t), 1 −ε, 1 + ε) ˆAi,t
+
+t=1
+
+i=1
+
+−βDKL[πθ(·|q)∥πref(·|q)]
+#
+
+,
+
+where q represents queries drawn from the input dataset, o represents the generation of the model, ε
+is the PPO clipping threshold, β is the KL penalty coefficient, and DKL denotes the Kullback–Leibler
+divergence between the current policy πθ and the reference policy πref. The relative advantage, or
+the group normalized advantage, is given by ˆAi,t = ri−µ
+
+σ
+where µ and σ are the mean and standard
+
+2
+
+
+--- Page 3 ---
+deviation of rewards computed within a single group. Building on prior work adapting GRPO for
+reasoning tasks [Yu et al., 2025, Liu et al., 2025, Hu et al., 2025], we introduced several modifications:
+
+Eliminating KL divergence. The KL divergence penalty constrains the online policy from deviating
+too much from a reference policy, helping to maintain alignment with the initial model. However, in
+GRPO, the policy diverges substantially regardless, and maintaining a copy of the reference model
+for KL computation incurs a compute cost we find unjustified. We remove the KL penalty entirely.
+
+Loss normalization. To avoid introducing length biases between generations in one group, we
+normalize the loss by first adding token-wise loss for all tokens and all generations and then dividing
+by the total length of generations in the group PG
+i=1 |oi|.
+
+Advantage normalization. We estimate the advantage of each token simply as ˆAi,t = ˆAi = ri −µ,
+where µ is the mean of rewards within a group. Following Andrychowicz et al. [2020], we additionally
+normalize the advantages in each minibatch as ˆAnorm
+i,t
+= ( ˆAi −ˆAmean)/ ˆAstd where ˆAmean and ˆAstd are
+the sequence-wise mean and standard deviation of the advantages ˆAi in a minibatch.
+
+Relaxing the trust region’s upper bound. We allow the model to explore rare but potentially
+insightful reasoning steps, preventing deterministic policies. We adopt the Clip-Higher [Yu et al.,
+2025] strategy to address entropy collapse. In standard GRPO, ε-clipping limits exploration by
+restricting the increase in probability of low-likelihood tokens, hindering the reinforcement of rare
+but important reasoning paths. By increasing the upper clipping threshold to εhigh, low-probability
+tokens have more room to grow, enhancing entropy and diversity in outputs, and improving reasoning
+exploration. We found that careful tuning of εhigh is crucial to maintaining stability in the RL run. We
+adjusted it between 0.26 and 0.28 during the training to keep the group entropy stable.
+
+Eliminating non-diverse groups. Groups where all generations are either entirely correct or wrong
+have zero advantage and therefore contribute nothing to the batch loss. This results in smaller
+gradients with increased noise sensitivity. To address this, we filter out all groups with zero advantage
+when forming training batches.
+
+The final GRPO loss with all modifications highlighted in red is
+
+|oi|
+X
+
+G
+X

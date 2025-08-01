@@ -1,0 +1,24 @@
+22.7
+RL (Math only)
+62.5
+38.3 (+15.6)
+RL (Code only)
+49.7 (+17.5)
+42.7
+
+10
+
+
+--- Page 11 ---
+top of Mistral Small 3. As shown in Figure 5, our Mistral Small 3 with pure RL achieves similar
+performance on AIME’24 as the distilled version. It even outperforms the distilled version on MATH
+and GPQA, but has slightly lower performance on code benchmarks such as LiveCodeBench. These
+results suggest that the benefits of RL are not exclusive to larger base models and hold equally well
+for smaller models. Furthermore, our findings indicate that the RL on top of the distilled checkpoint
+can yield even better performance, leading to over 5 points gain across various benchmarks.
+
+Figure 5: Performance of Magistral Small compared with different training setups on various benchmarks.
+We report the performance of three distinct 24B models: Mistral Small 24B trained from scratch with RL
+(RL only), Mistral Small 24B fine-tuned on reasoning traces from Magistral Medium, and Mistral Small 24B
+fine-tuned on Magistral Medium traces and subsequently enhanced with RL, which is the final Magistral Small.
+We observe that the combination of fine-tuning on reasoning traces with RL leads to the best performance.

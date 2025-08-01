@@ -1,0 +1,15 @@
+4.2
+Code
+
+We gathered code contest data from various sources. Each data point includes a problem statement
+and, when available, correct solutions and related tests. For the training process, we want problem
+statements and a large number of correct tests per problem. In order to achieve this, we first remove
+any problems without solutions and without enough tests. Each solution is then executed on all
+available tests, and we discard tests with insufficient agreement. For tests with sufficient agreement
+but where no solution succeeded, we assume that the test is incorrect and update it to reflect the most
+common result among the solutions’ outputs. In cases where code problems lack tests, we generate
+additional tests and subject them to the same evaluation process.
+
+Finally, where applicable, problem statements are duplicated to require code in Python or C++, two
+commonly used languages in competitive programming. This process resulted in a dataset of 35k
+code problems.

@@ -1,0 +1,66 @@
+5.3
+Magistral Small – RL on top of reasoning SFT bootstrapping
+
+Given a strong ‘teacher’ model in Magistral Medium, we next explore how one can train the strongest
+possible student model. To do so, we train Magistral Small, which is ‘cold-started’ with SFT traces
+from Magistral Medium.
+
+8
+
+
+--- Page 9 ---
+In contrast with pure RL training (which benefits from a small set of extremely clean and difficult
+training points, Section 4), we find diversity of prompts to be important for the reasoning cold-start.
+We begin by extracting traces with correct answers from the RL training of Magistral Medium,
+excluding those from early steps with short CoTs. We also maintain a mixed difficulty level of the
+problems by limiting number of generations per problem to avoid biasing the collected traces towards
+easier problems and also upsampling problems with lower pass rates.
+
+We augment this SFT cold-start data by generating responses from our Magistral Medium on a
+large set of diverse prompts, sourced from OpenThoughts [Guha et al., 2025] and the code subset
+of OpenR1 [Hugging Face, 2025, Penedo et al., 2025]. We perform additional filtering on top and
+kept a subset of the prompts. This gives us a reasoning dataset with mixed difficulty. We also include
+10% of datapoints for general instruction tuning in order to preserve non-reasoning capabilities. We
+finetuned Mistral Small 3 Instruct (a 24-billion parameter model) for 4 epochs, and chose the best
+checkpoint on AIME’24 as the initial checkpoint for the following RL stage.
+
+We then trained this SFT checkpoint with RL using a batch size of 2048 sequences, and a maximum
+non-penalized completion length lmax −lcache of 32k. We used a sampling temperature of 1.0 for
+our generations, as it provided the best balance between avoiding the lack of diversity seen at lower
+temperatures and the incoherent outputs generated at higher temperatures. We use a εhigh of 0.3, to
+encourage exploration, as the cold-started model yielded responses with far lower entropy.
+
+Table 3 shows the performance of the 24B model trained under three different paradigms: with SFT
+alone; with RL alone; and with RL on top of the cold-start checkpoint. Here, contrary to findings
+from [DeepSeek-AI et al., 2025], we find one can get substantial boosts with RL even on a smaller
+base model, over and above distillation from the larger teacher. This underscores the strength of the
+RL stack introduced in this work.
+
+Table 2: Results of Magistral Medium trained solely with RL. To reduce variance, we compute the average
+over 64 runs for AIME (shown as pass@1/maj@64) and over 16 runs for LiveCodeBench. Humanity’s Last
+Exam is evaluated only for the text subset.
+
+Task
+Mistral
+Medium 3
+Magistral
+Medium
+DeepSeek-
+v3
+DeepSeek-
+R1-Zero
+DeepSeek-
+R1
+
+Reasoning SFT before RL
+-
+✗
+-
+✗
+✓
+
+AIME’24
+26.8 / 43.4
+73.6 / 90.0
+39.2
+71.0

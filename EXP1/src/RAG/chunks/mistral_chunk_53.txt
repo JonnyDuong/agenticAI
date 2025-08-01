@@ -1,0 +1,43 @@
+Conclusion
+
+Magistral is our first step towards generally capable systems with reinforcement learning. We look
+forward to the next research problems ahead of us: what loss and optimization algorithms are the
+most appropriate, how much gain can be unlocked by bootstrapping a model on its own reasoning
+traces, or how to scale to the next order of magnitude of compute. Looking ahead, we are also
+excited to push the boundaries of RL across a whole range of applications, with tool-use, integrated
+multimodality, and agents. As we explore this frontier, we remain committed to contributing to
+science in a transparent and optimistic manner.
+
+16
+
+
+--- Page 17 ---
+Core contributors
+
+Abhinav Rastogi, Albert Q. Jiang, Andy Lo, Gabrielle Berrada, Guillaume Lample, Jason Rute, Joep
+Barmentlo, Karmesh Yadav, Kartik Khandelwal, Khyathi Raghavi Chandu, Léonard Blier, Lucile
+Saulnier, Matthieu Dinot, Maxime Darrin, Neha Gupta, Roman Soletskyi, Sagar Vaze, Teven Le
+Scao, Yihan Wang
+
+Contributors
+
+Adam Yang, Alexander H. Liu, Alexandre Sablayrolles, Amélie Héliou, Amélie Martin, Andy
+Ehrenberg, Anmol Agarwal, Antoine Roux, Arthur Darcet, Arthur Mensch, Baptiste Bout, Baptiste
+Rozière, Baudouin De Monicault, Chris Bamford, Christian Wallenwein, Christophe Renaudin,
+Clémence Lanfranchi, Darius Dabert, Devon Mizelle, Diego de las Casas, Elliot Chane-Sane, Emilien
+Fugier, Emma Bou Hanna, Gauthier Delerce, Gauthier Guinet, Georgii Novikov, Guillaume Martin,
+Himanshu Jaju, Jan Ludziejewski, Jean-Hadrien Chabran, Jean-Malo Delignon, Joachim Studnia,
+Jonas Amar, Josselin Somerville Roberts, Julien Denize, Karan Saxena, Kush Jain, Lingxiao Zhao,
+Louis Martin, Luyu Gao, Lélio Renard Lavaud, Marie Pellat, Mathilde Guillaumin, Mathis Felardos,
+Maximilian Augustin, Mickaël Seznec, Nikhil Raghuraman, Olivier Duchenne, Patricia Wang,
+Patrick von Platen, Patryk Saffer, Paul Jacob, Paul Wambergue, Paula Kurylowicz, Pavankumar
+Reddy Muddireddy, Philomène Chagniot, Pierre Stock, Pravesh Agrawal, Romain Sauvestre, Rémi
+Delacourt, Sanchit Gandhi, Sandeep Subramanian, Shashwat Dalal, Siddharth Gandhi, Soham Ghosh,
+Srijan Mishra, Sumukh Aithal, Szymon Antoniak, Thibault Schueller, Thibaut Lavril, Thomas Robert,
+Thomas Wang, Timothée Lacroix, Valeriia Nemychnikova, Victor Paltz, Virgile Richard, Wen-Ding
+Li, William Marshall, Xuanyu Zhang, Yunhao Tang
+
+17
+
+
+--- Page 18 ---

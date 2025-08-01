@@ -1,0 +1,6 @@
+6
+Ablations
+
+In this section, we tweak parameters of the training process to investigate what happens when RL is
+performed on only one modality, compare RL to the distillation SFT baseline, and shed light on two
+training choices we had to reckon with, batch and minibatch size, and advantage normalization.

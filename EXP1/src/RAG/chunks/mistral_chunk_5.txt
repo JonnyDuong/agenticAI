@@ -1,0 +1,27 @@
+1
+PG
+i=1 |oi|
+
+JGRPO(θ) = Eq∼P (Q),{oi}G
+i=1∼πθold(·|q)
+
+t=1
+
+i=1
+
+min
+ πθ(oi,t|q, oi,<t)
+
+
+,
+
+i,t , clip( πθ(oi,t|q, oi,<t)
+
+πθold(oi,t|q, oi,<t), 1 −εlow, 1 + εhigh) ˆAnorm
+
+πθold(oi,t|q, oi,<t)
+ˆAnorm
+
+i,t
+
+s. t. ∃1 ≤m < n ≤G, rm ̸= rn.

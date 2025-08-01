@@ -1,0 +1,46 @@
+1
+Introduction
+
+Enhancing the reasoning abilities of large language models (LLMs) has emerged as a key frontier in
+modern AI research. Reasoning models such as o1 [Jaech et al., 2024] differ widely from classic
+chatbots, leveraging longer chains-of-thought to improve performance on complex tasks. The seminal
+work by DeepSeek-AI et al. [2025] gave the community crucial insights on the Reinforcement
+Learning from Verifiable Rewards (RLVR) recipe, for creating reasoning models at scale.
+
+In this paper, we introduce Mistral’s first reasoning models: Magistral Small and Magistral Medium,
+based on the Mistral Small 3 and Mistral Medium 3 models respectively, and outline our proposed
+RLVR framework in detail. The key contributions of our paper are the following:
+
+• We present in detail how we trained Magistral Medium with RL alone, with no distillation
+from pre-existing reasoning models, yielding a nearly 50% boost in AIME-24 (pass@1).
+• We discuss in depth the infrastructure and design choices that enable large-scale online
+RL. Our asynchronous system enables fast, continuous RL training by updating generators
+frequently without interrupting them, balancing efficiency with on-policyness.
+• We present a simple yet effective strategy to make the model multilingual, where both the
+chain-of-thought and the final response are written in the user’s language.
+• We contribute insights that add to, or contradict, existing RLVR literature, for example on
+whether RL can improve upon the distillation SFT baseline for small models. We also show
+that multimodal reasoning capabilities emerge with online RL with textual data on top of
+a multimodal model. We share the results of our unsuccessful experiments.
+• We release the weights of Magistral Small (24B) under the Apache 2 license1.
+
+1https://huggingface.co/mistralai/Magistral-Small-2506
+
+
+--- Page 2 ---
+Figure 1: Performance of Magistral Medium on common reasoning benchmarks. We highlight the
+strength of our proposed RLVR framework, which yields a 50% increase in AIME-24 (pass@1) over the initial
+Mistral Medium 3 checkpoint, without any cold-start reasoning traces. We compare against analogous results
+from [DeepSeek-AI et al., 2025], which show RL improvements from DeepSeek-v3 to DeepSeek-R1 (January
+25). Magistral Medium reaches 90% accuracy on AIME-24 with majority voting.
+
+The paper is organized as follows: Section 2 details the RL algorithm we used, along with the design
+choices implemented to guide the reasoning models in terms of language and format; Section 3
+presents our scalable infrastructure that supports efficient training on a large cluster of GPUs;
+Section 4 discusses the data selection process we employed for efficient and effective training;
+Section 5 presents the performance of Magistral on reasoning and multilingual benchmarks; Section 6
+shows the ablations done to motivate the training choices; Section 7 presents a PCA-based study
+of the model weights’ trajectory during RL, demonstrates that RL on text data preserves or even
+improves multimodal capabilities, and includes methods that worked poorly for Magistral; Section 8
+shows that one can train a model to perform on par with R1 with distillation followed by RL, which
+we did not use for Magistral Medium; Finally, we conclude with some future directions in Section 9.

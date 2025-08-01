@@ -1,0 +1,21 @@
+6.4
+
+Table 4: Magistral Medium’s pass@1 performance on multilingual versions of the AIME 2024 benchmark.
+
+Language
+English
+French
+Spanish
+German
+Italian
+Russian
+Chinese
+
+AIME’24 (pass@1)
+73.6
+68.5
+69.3
+66.8
+66.7
+65.0
+63.7

@@ -1,0 +1,6 @@
+87.4
+
+Instruction following
+IFEval
+86.8
+87.4

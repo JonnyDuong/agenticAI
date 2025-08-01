@@ -1,0 +1,15 @@
+6.2
+Distillation vs. RL for small models
+
+Previous works [DeepSeek-AI et al., 2025] have observed that smaller models relying solely on RL
+may not be able to achieve performance comparable to those distilled from larger reasoning models.
+However, our findings contradict this observation: we achieved strong results even with pure RL on
+
+Table 5: Cross-domain generalization during math-only and code-only RL for a 24B model
+
+Model
+AIME’24
+LiveCodeBench v5
+
+Starting Checkpoint
+32.2

@@ -1,0 +1,8 @@
+6.1
+Cross-domain generalization
+
+We investigate the ability of our model to generalize across domains by training on one domain (math
+or code) and evaluating on the other. Specifically, we conduct two experiments on the 24B model:
+one where the model is trained exclusively on math data and evaluated on both math and code, and
+another where it is trained only on code and evaluated similarly. As shown in Table 5, the model
+demonstrates strong performance to out-of-domain tasks, showcasing the generalization ability of RL.
